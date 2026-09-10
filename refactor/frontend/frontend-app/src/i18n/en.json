@@ -1,0 +1,117 @@
+{
+  "app": { "name": "CurrencyAI", "tagline": "Smart Currency Intelligence" },
+  "nav": {
+    "home": "Home",
+    "converter": "Converter",
+    "currencies": "Currencies",
+    "history": "History",
+    "aiOnline": "AI Online",
+    "accountSettings": "Account settings",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "logout": "Log out",
+    "news": "News"
+  },
+  "hero": {
+    "badge": "AI Currency Recognition System",
+    "titleLine1": "Identify currencies.",
+    "titleLine2": "Convert instantly.",
+    "subtitle": "Upload or capture a banknote and let our AI identify the currency, denomination and confidence score in seconds.",
+    "uploadImage": "Upload Image",
+    "useCamera": "Use Camera",
+    "statCurrencies": "Currencies",
+    "statAI": "Recognition",
+    "statLive": "Conversion"
+  },
+  "recognizer": {
+    "title": "AI Currency Recognizer",
+    "subtitle": "Upload a clear image of a banknote",
+    "dropTitle": "Drop your currency image here",
+    "dropSubtitle": "or choose an image from your device",
+    "chooseImage": "Choose Image",
+    "camera": "Camera",
+    "hint": "PNG, JPG, JPEG • Clear images work best",
+    "analyzing": "Analyzing Banknote...",
+    "recognize": "Recognize Currency",
+    "remove": "Remove"
+  },
+  "result": {
+    "aiResult": "AI RESULT",
+    "identified": "Currency Identified",
+    "confidence": "confidence",
+    "detected": "Detected denomination",
+    "modelConfidence": "MODEL CONFIDENCE",
+    "confidenceNote": "The AI model's confidence in this prediction.",
+    "speak": "Speak Result",
+    "stopSpeaking": "Stop",
+    "news": "Finance News",
+    "info": "Currency Info"
+  },
+  "guidance": {
+    "title": "Tips for a better result"
+  },
+  "converter": {
+    "title": "Currency Converter",
+    "subtitle": "Convert the detected denomination",
+    "manualTitle": "Manual Currency Converter",
+    "manualSubtitle": "Convert any amount between world currencies with live exchange rates",
+    "detected": "Detected",
+    "amount": "Amount",
+    "from": "From Currency",
+    "to": "To Currency",
+    "swap": "Swap",
+    "convert": "Convert",
+    "convertTo": "Convert to",
+    "fetching": "Fetching rate...",
+    "liveRate": "Live exchange rate",
+    "convertedValue": "Converted value",
+    "popularPairs": "Popular Currency Pairs",
+    "rateInfo": "Exchange Rate Details",
+    "quickTable": "Quick Conversion Table",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "openFull": "Open in Full Converter",
+    "editAmount": "Edit Amount",
+    "lastUpdated": "Last updated",
+    "inverseRate": "Inverse rate"
+  },
+  "features": {
+    "title": "What CurrencyAI Can Do",
+    "subtitle": "More than simple image classification"
+  },
+  "currencies": {
+    "title": "Supported Currencies",
+    "subtitle": "Currency recognition supported by the AI model"
+  },
+  "history": {
+    "title": "Recognition History",
+    "subtitle": "Your recently recognized currency notes",
+    "empty": "No recognition history",
+    "emptyHint": "Recognized currency notes will appear here.",
+    "search": "Search history...",
+    "export": "Export CSV",
+    "clear": "Clear all"
+  },
+  "news": {
+    "title": "Market Intelligence",
+    "subtitle": "Latest financial and currency market headlines",
+    "loading": "Fetching latest news...",
+    "empty": "No news found",
+    "emptyHint": "Try checking back later."
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Sign in to start recognizing currency.",
+    "signupTitle": "Create your account",
+    "signupSubtitle": "Set up access in a few seconds.",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "newHere": "New here?",
+    "haveAccount": "Already have an account?",
+    "signUp": "Sign up",
+    "guest": "Continue as guest"
+  }
+}
