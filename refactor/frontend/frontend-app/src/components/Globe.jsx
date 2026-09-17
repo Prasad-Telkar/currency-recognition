@@ -61,7 +61,7 @@ function Globe() {
     let earthMesh; // Will hold the high-res point cloud
 
     const img = new Image();
-    img.src = "/earth-water.png";
+    img.src = `${import.meta.env.BASE_URL}earth-water.png`;
     img.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width = img.width;

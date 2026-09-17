@@ -3731,7 +3731,7 @@ button:disabled {
   left: 0;
   bottom: 0;
   width: 72px;
-  background: rgba(11, 16, 32, 0.5); /* Deep Navy Glass */
+  background: var(--surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-right: 1px solid var(--border);
