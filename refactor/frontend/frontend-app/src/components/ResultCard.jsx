@@ -3,7 +3,7 @@ import { Volume2, VolumeX, Newspaper, Info, Globe as GlobeIcon } from "lucide-re
 import ConfidenceGuidance from "./ConfidenceGuidance";
 import ConverterCard from "./ConverterCard";
 
-export default function ResultCard({ result, voice, lang, conversion, onOpenFullConverter }) {
+export default function ResultCard({ result, voice, lang, conversion, onOpenFullConverter, onOpenNews }) {
   const { t } = useTranslation();
   if (!result) return null;
 
@@ -12,7 +12,7 @@ export default function ResultCard({ result, voice, lang, conversion, onOpenFull
   const speakText = `This is a ${denomination} ${currencyName || country} note. Recognition confidence is ${confidence} percent.`;
 
   return (
-    <section className="result-section">
+    <section className="result-section glass-panel" style={{ padding: "24px", marginTop: "20px" }}>
       <div className="result-header">
         <div>
           <span className="result-label">{t("result.aiResult")}</span>
@@ -81,11 +81,7 @@ export default function ResultCard({ result, voice, lang, conversion, onOpenFull
           {voice.speaking ? t("result.stopSpeaking") : t("result.speak")}
         </button>
 
-        <button
-          onClick={() =>
-            window.open(`https://news.google.com/search?q=${country}%20${currencyCode}%20currency`, "_blank")
-          }
-        >
+        <button onClick={onOpenNews}>
           <Newspaper size={16} />
           {t("result.news")}
         </button>

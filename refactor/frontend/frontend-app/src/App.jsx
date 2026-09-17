@@ -22,6 +22,9 @@ import HistoryList from "./components/HistoryList";
 import NewsSection from "./components/NewsSection";
 import Footer from "./components/Footer";
 import AIAssistant from "./components/AIAssistant";
+import Sidebar from "./components/Sidebar";
+import AICapabilities from "./components/AICapabilities";
+import AboutUs from "./components/AboutUs";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -63,51 +66,55 @@ export default function App() {
       <div className="bg-orb orb-2"></div>
       <div className="bg-orb orb-3"></div>
 
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        user={user}
-        onLogout={logout}
-      />
+      <div className="app-layout">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          user={user}
+          onLogout={logout}
+        />
 
-      <main>
-        {activeTab === "home" && (
-          <>
-            <Hero fileInputRef={fileInputRef} cameraInputRef={cameraInputRef} />
+        <div className="main-content-wrapper">
+          <main className="main-content">
+            {activeTab === "home" && (
+              <>
+                <Hero fileInputRef={fileInputRef} cameraInputRef={cameraInputRef} />
 
-            <UploadBox
-              recognition={recognition}
-              onPredict={recognition.analyze}
-              fileInputRef={fileInputRef}
-              cameraInputRef={cameraInputRef}
-            />
+                <UploadBox
+                  recognition={recognition}
+                  onPredict={recognition.analyze}
+                  fileInputRef={fileInputRef}
+                  cameraInputRef={cameraInputRef}
+                />
 
-            <ResultCard
-              result={recognition.result}
-              voice={voice}
-              lang={voiceLang}
-              conversion={conversion}
-              onOpenFullConverter={handleOpenFullConverter}
-            />
+                <ResultCard
+                  result={recognition.result}
+                  voice={voice}
+                  lang={voiceLang}
+                  conversion={conversion}
+                  onOpenFullConverter={handleOpenFullConverter}
+                  onOpenNews={() => setActiveTab("news")}
+                />
 
-            <FeaturesSection />
-          </>
-        )}
+                <FeaturesSection />
+              </>
+            )}
 
-        {activeTab === "converter" && (
-          <ManualConverter conversion={conversion} />
-        )}
+            {activeTab === "ai" && <AICapabilities />}
+            {activeTab === "about" && <AboutUs />}
+            {activeTab === "converter" && <ManualConverter conversion={conversion} />}
+            {activeTab === "currencies" && <CurrencyGrid />}
+            {activeTab === "history" && <HistoryList history={history} />}
+            {activeTab === "news" && <NewsSection />}
+          </main>
 
-        {activeTab === "currencies" && <CurrencyGrid />}
-        {activeTab === "history" && <HistoryList history={history} />}
-        {activeTab === "news" && <NewsSection />}
-      </main>
+          <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
 
-      <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
-
-      <Footer setActiveTab={setActiveTab} />
+          <Footer setActiveTab={setActiveTab} />
+        </div>
+      </div>
     </div>
   );
 }

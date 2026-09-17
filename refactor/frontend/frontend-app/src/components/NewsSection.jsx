@@ -63,9 +63,22 @@ export default function NewsSection() {
       </div>
 
       {loading ? (
-        <div className="empty-state">
-          <Loader2 className="animate-spin" size={30} />
-          <p>{t("news.loading", "Fetching latest news...")}</p>
+        <div className="news-feed">
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className="news-card glass-panel has-image skeleton">
+              <div className="news-card-image-wrapper skeleton-image" />
+              <div className="news-card-body">
+                <div className="skeleton-text short" />
+                <div className="skeleton-text title" />
+                <div className="skeleton-text" />
+                <div className="skeleton-text" />
+                <div className="news-impact-metrics">
+                  <div className="skeleton-tag" />
+                  <div className="skeleton-tag" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : news.length === 0 ? (
         <div className="empty-state">
@@ -76,7 +89,7 @@ export default function NewsSection() {
       ) : (
         <div className="news-feed">
           {news.map((item, i) => (
-            <div key={i} className="news-card has-image" onClick={() => setSelectedArticle(item)}>
+            <div key={i} className="news-card glass-panel has-image" onClick={() => setSelectedArticle(item)}>
               <div className="news-card-image-wrapper">
                 <img src={item.imageUrl} alt={item.title} className="news-card-image" />
               </div>
@@ -103,7 +116,7 @@ export default function NewsSection() {
 
       {selectedArticle && (
         <div className="article-drawer-overlay" onClick={() => setSelectedArticle(null)}>
-          <div className="article-drawer" onClick={e => e.stopPropagation()}>
+          <div className="article-drawer glass-panel" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
               <div className="drawer-header-content">
                 <div className="news-card-header" style={{ marginBottom: "10px" }}>

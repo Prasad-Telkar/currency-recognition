@@ -30,6 +30,7 @@ export default function Footer({ setActiveTab }) {
             <li><button onClick={() => setActiveTab("converter")}>Converter</button></li>
             <li><button onClick={() => setActiveTab("currencies")}>Currencies</button></li>
             <li><button onClick={() => setActiveTab("history")}>History</button></li>
+            <li><button onClick={() => setActiveTab("ai")}>What AI Can Do</button></li>
           </ul>
         </div>
 
@@ -37,7 +38,7 @@ export default function Footer({ setActiveTab }) {
           <h4>Resources</h4>
           <ul>
             <li><button onClick={() => setActiveTab("currencies")}>Currency Guide</button></li>
-            <li><a href="https://news.google.com/search?q=currency%20markets" target="_blank" rel="noreferrer">Finance News</a></li>
+            <li><button onClick={() => setActiveTab("news")}>Finance News</button></li>
             <li><a href="#">API Docs</a></li>
             <li><a href="#">Help Center</a></li>
           </ul>
@@ -64,7 +65,7 @@ export default function Footer({ setActiveTab }) {
         <div className="footer-col">
           <h4>Company</h4>
           <ul>
-            <li><a href="#">About Us</a></li>
+            <li><button onClick={() => setActiveTab("about")}>About Us</button></li>
             <li><a href="#">Contact Us</a></li>
             <li><a href="#">Blog</a></li>
           </ul>

@@ -121,7 +121,7 @@ export default function ManualConverter({ conversion, initialFrom, initialAmount
       </div>
 
       {/* Main Converter Card */}
-      <div className="manual-converter-card">
+      <div className="manual-converter-card glass-panel">
         {/* Popular Pairs Chips */}
         <div className="popular-pairs-container">
           <span className="popular-pairs-label">{t("converter.popularPairs")}:</span>
@@ -305,7 +305,7 @@ export default function ManualConverter({ conversion, initialFrom, initialAmount
 
       {/* Quick Conversion Reference Table */}
       {rate && (
-        <div className="quick-table-card">
+        <div className="quick-table-card glass-panel">
           <div className="quick-table-header">
             <Table size={18} />
             <h3>{t("converter.quickTable")} ({baseCurrency} to {targetCurrency})</h3>

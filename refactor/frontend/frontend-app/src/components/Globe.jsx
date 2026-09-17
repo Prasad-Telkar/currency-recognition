@@ -34,16 +34,16 @@ function Globe() {
     container.appendChild(renderer.domElement);
 
     // -----------------------------
-    // LIGHTS — blue + cyan
+    // LIGHTS — indigo + violet
     // -----------------------------
-    const ambientLight = new THREE.AmbientLight(0x5b9dff, 1.4);
+    const ambientLight = new THREE.AmbientLight(0x818cf8, 1.4);
     scene.add(ambientLight);
 
-    const blueLight = new THREE.PointLight(0x2563eb, 5, 20);
+    const blueLight = new THREE.PointLight(0x6366f1, 5, 20);
     blueLight.position.set(4, 3, 5);
     scene.add(blueLight);
 
-    const cyanLight = new THREE.PointLight(0x22d3ee, 3, 15);
+    const cyanLight = new THREE.PointLight(0x8b5cf6, 4, 15);
     cyanLight.position.set(-4, -2, 3);
     scene.add(cyanLight);
 
@@ -56,128 +56,91 @@ function Globe() {
     const globeRadius = 2.15;
 
     // -----------------------------
-    // WORLD TEXTURE — deep-navy ocean, blue landmasses
+    // HIGH-RES DOT EARTH (From Texture)
     // -----------------------------
-    const canvas = document.createElement("canvas");
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext("2d");
+    let earthMesh; // Will hold the high-res point cloud
 
-    ctx.fillStyle = "#0a1330";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const img = new Image();
+    img.src = "/earth-water.png";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-    ctx.strokeStyle = "rgba(90,150,255,0.18)";
-    ctx.lineWidth = 2;
-    for (let x = 0; x <= canvas.width; x += 80) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= canvas.height; y += 80) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
+      // In three-globe maps, water is usually one distinct brightness
+      const cornerBrightness = (imageData[0] + imageData[1] + imageData[2]) / 3;
+      const isWaterBlack = cornerBrightness < 128; 
 
-    const continents = [
-      [[170, 250], [240, 190], [330, 180], [390, 230], [370, 300], [300, 330], [250, 390], [190, 360], [150, 300]],
-      [[420, 410], [470, 450], [490, 530], [460, 620], [410, 700], [370, 650], [390, 560], [370, 490]],
-      [[780, 220], [850, 170], [960, 180], [1030, 240], [1000, 310], [930, 340], [850, 320], [790, 280]],
-      [[1080, 270], [1170, 230], [1280, 250], [1370, 320], [1330, 390], [1240, 400], [1180, 360], [1110, 380]],
-      [[1040, 430], [1120, 410], [1200, 460], [1170, 560], [1100, 650], [1050, 620], [1010, 540]],
-      [[1320, 500], [1410, 470], [1510, 510], [1580, 570], [1520, 640], [1430, 630], [1370, 580]],
-      [[1500, 220], [1600, 210], [1700, 260], [1770, 330], [1720, 390], [1630, 350], [1550, 300]],
-    ];
+      const dotGeometry = new THREE.BufferGeometry();
+      const dotPositions = [];
+      const dotColors = [];
 
-    ctx.fillStyle = "#4f8dff";
-    ctx.shadowColor = "#8ec5ff";
-    ctx.shadowBlur = 18;
-    continents.forEach((continent) => {
-      ctx.beginPath();
-      continent.forEach(([x, y], index) => {
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      const latSegments = 160;
+      const lonSegments = 320;
+
+      const colorLeft = new THREE.Color(0xec4899);  // Pink/Magenta
+      const colorMid = new THREE.Color(0x8b5cf6);   // Violet
+      const colorRight = new THREE.Color(0x38bdf8); // Cyan
+      const colorOcean = new THREE.Color(0x1e1b4b); // Very dark indigo for ocean volume
+
+      // We skip the extreme poles (lat < 15 and lat > 135) to avoid the dense "squashed disc"
+      // artifact at the North and South poles (especially Antarctica).
+      for (let lat = 15; lat <= 135; lat++) {
+        const phi = (lat / latSegments) * Math.PI; 
+        for (let lon = 0; lon <= lonSegments; lon++) {
+          const theta = (lon / lonSegments) * Math.PI * 2; 
+
+          const x = Math.floor((lon / lonSegments) * (canvas.width - 1));
+          const y = Math.floor((lat / latSegments) * (canvas.height - 1));
+
+          const i = (y * canvas.width + x) * 4;
+          const brightness = (imageData[i] + imageData[i+1] + imageData[i+2]) / 3;
+          const isLand = isWaterBlack ? brightness > 128 : brightness < 128;
+
+          const px = globeRadius * Math.sin(phi) * Math.cos(theta);
+          const py = globeRadius * Math.cos(phi);
+          const pz = globeRadius * Math.sin(phi) * Math.sin(theta);
+
+          if (isLand) {
+            dotPositions.push(px, py, pz);
+
+            // Create a stunning 3D gradient matching the user's reference perfectly!
+            const t = (px / globeRadius + 1) / 2; // Map X from 0 to 1
+            const mixedColor = new THREE.Color();
+            if (t < 0.5) {
+               mixedColor.lerpColors(colorLeft, colorMid, t * 2);
+            } else {
+               mixedColor.lerpColors(colorMid, colorRight, (t - 0.5) * 2);
+            }
+            // Add a punch of bright white to the landmass to make it pop
+            mixedColor.lerp(new THREE.Color(0xffffff), 0.15);
+            dotColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+          } else {
+            // Sparse ocean dots to give the sphere 3D volume
+            if (Math.random() > 0.94) {
+                dotPositions.push(px, py, pz);
+                dotColors.push(colorOcean.r, colorOcean.g, colorOcean.b);
+            }
+          }
+        }
+      }
+
+      dotGeometry.setAttribute("position", new THREE.Float32BufferAttribute(dotPositions, 3));
+      dotGeometry.setAttribute("color", new THREE.Float32BufferAttribute(dotColors, 3));
+
+      const dotMaterial = new THREE.PointsMaterial({
+        size: 0.015,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.95,
       });
-      ctx.closePath();
-      ctx.fill();
-    });
-    ctx.shadowBlur = 0;
 
-    const worldTexture = new THREE.CanvasTexture(canvas);
-    worldTexture.colorSpace = THREE.SRGBColorSpace;
-
-    // -----------------------------
-    // EARTH
-    // -----------------------------
-    const earthGeometry = new THREE.SphereGeometry(globeRadius, 96, 96);
-    const earthMaterial = new THREE.MeshPhongMaterial({
-      map: worldTexture,
-      transparent: true,
-      shininess: 90,
-      specular: new THREE.Color(0x60a5fa),
-    });
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    globeGroup.add(earth);
-
-    // -----------------------------
-    // ATMOSPHERE — soft blue glow
-    // -----------------------------
-    const atmosphereGeometry = new THREE.SphereGeometry(globeRadius * 1.08, 64, 64);
-    const atmosphereMaterial = new THREE.MeshBasicMaterial({
-      color: 0x3b82f6,
-      transparent: true,
-      opacity: 0.16,
-      side: THREE.BackSide,
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    globeGroup.add(atmosphere);
-
-    // -----------------------------
-    // LATITUDE / LONGITUDE LINES — kept sparse and faint so they
-    // read as structure, not clutter.
-    // -----------------------------
-    const gridMaterial = new THREE.LineBasicMaterial({
-      color: 0x4a6fa5,
-      transparent: true,
-      opacity: 0.14,
-    });
-
-    for (let i = 0; i < 6; i++) {
-      const longitude = (i / 6) * Math.PI;
-      const points = [];
-      for (let j = 0; j <= 100; j++) {
-        const phi = (j / 100) * Math.PI;
-        points.push(
-          new THREE.Vector3(
-            globeRadius * Math.sin(phi) * Math.cos(longitude),
-            globeRadius * Math.cos(phi),
-            globeRadius * Math.sin(phi) * Math.sin(longitude)
-          )
-        );
-      }
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      globeGroup.add(new THREE.Line(geometry, gridMaterial));
-    }
-
-    for (let i = -2; i <= 2; i++) {
-      const latitude = (i / 5) * (Math.PI / 2);
-      const points = [];
-      for (let j = 0; j <= 100; j++) {
-        const angle = (j / 100) * Math.PI * 2;
-        const radius = globeRadius * Math.cos(latitude);
-        points.push(
-          new THREE.Vector3(
-            radius * Math.cos(angle),
-            globeRadius * Math.sin(latitude),
-            radius * Math.sin(angle)
-          )
-        );
-      }
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      globeGroup.add(new THREE.Line(geometry, gridMaterial));
-    }
+      earthMesh = new THREE.Points(dotGeometry, dotMaterial);
+      globeGroup.add(earthMesh);
+    };
 
     // -----------------------------
     // ORBITING CURRENCY DISCS
@@ -265,7 +228,7 @@ function Globe() {
     }
     particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMaterial = new THREE.PointsMaterial({
-      color: 0x5b9dff,
+      color: 0xa855f7,
       size: 0.025,
       transparent: true,
       opacity: 0.75,
@@ -277,14 +240,15 @@ function Globe() {
     // ANIMATION
     // -----------------------------
     let animationId;
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
 
     function animate() {
       animationId = requestAnimationFrame(animate);
-      const elapsed = clock.getElapsedTime();
+      const elapsed = (performance.now() - startTime) / 1000;
 
-      earth.rotation.y = elapsed * 0.08;
-      atmosphere.rotation.y = elapsed * 0.05;
+      if (earthMesh) {
+          earthMesh.rotation.y = elapsed * 0.08;
+      }
 
       orbitObjects.forEach((object) => {
         object.angle += object.speed * 0.02;

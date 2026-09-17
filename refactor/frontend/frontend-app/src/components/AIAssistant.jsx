@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { MessageCircle, X, Send, Volume2 } from 'lucide-react';
+import { MessageCircle, X, Send, Volume2, Mic } from 'lucide-react';
 import { chatAI } from "../services/api";
+
+import ReactMarkdown from 'react-markdown';
 
 export default function AIAssistant({ context }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,10 +22,6 @@ export default function AIAssistant({ context }) {
     try {
       const answer = await chatAI(userQ, context);
       setMessages(prev => [...prev, { role: "ai", text: answer }]);
-      
-      // Text-To-Speech
-      const utterance = new SpeechSynthesisUtterance(answer);
-      window.speechSynthesis.speak(utterance);
     } catch (error) {
       setMessages(prev => [...prev, { role: "ai", text: "Sorry, I'm having trouble connecting right now." }]);
     } finally {
@@ -46,15 +44,18 @@ export default function AIAssistant({ context }) {
         </button>
       ) : (
         <div style={{
-          width: '320px', height: '400px', background: 'var(--surface)', border: '1px solid var(--border)',
+          width: '350px', height: '450px', background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
           boxShadow: '0 10px 30px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)'
         }}>
           <div style={{ padding: '15px', background: 'rgba(59, 130, 246, 0.1)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Volume2 size={16} /> Travel Assistant
+              <Volume2 size={16} /> CurrencyAI Assistant
             </h3>
-            <button onClick={() => setIsOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+            <button onClick={() => {
+                window.speechSynthesis.cancel();
+                setIsOpen(false);
+              }} style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
               <X size={20} />
             </button>
           </div>
@@ -62,17 +63,36 @@ export default function AIAssistant({ context }) {
           <div style={{ flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {messages.length === 0 && (
               <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: '13px', marginTop: '20px' }}>
-                Ask me about {context || "financial tips"}!
+                Ask me about {context || "currency recognition and conversion"}!
               </p>
             )}
             {messages.map((msg, i) => (
-              <div key={i} style={{
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                background: msg.role === 'user' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                padding: '10px 14px', borderRadius: '12px', maxWidth: '85%', fontSize: '14px',
-                lineHeight: '1.4'
-              }}>
-                {msg.text}
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                <div className={msg.role === 'ai' ? 'ai-markdown-msg' : ''} style={{
+                  background: msg.role === 'user' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                  padding: '10px 14px', borderRadius: '12px', fontSize: '14px', lineHeight: '1.4'
+                }}>
+                  {msg.role === 'ai' ? (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  ) : (
+                    msg.text
+                  )}
+                </div>
+                {msg.role === 'ai' && (
+                  <button 
+                    onClick={() => {
+                      window.speechSynthesis.cancel();
+                      const utterance = new SpeechSynthesisUtterance(msg.text);
+                      window.speechSynthesis.speak(utterance);
+                    }}
+                    style={{
+                      alignSelf: 'flex-start', marginTop: '4px', background: 'transparent', 
+                      border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '4px'
+                    }}
+                  >
+                    <Volume2 size={14} /> Read aloud
+                  </button>
+                )}
               </div>
             ))}
             {isLoading && (
@@ -83,6 +103,31 @@ export default function AIAssistant({ context }) {
           </div>
           
           <form onSubmit={handleSend} style={{ padding: '10px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                  alert("Voice recognition is not supported in this browser.");
+                  return;
+                }
+                const recognition = new SpeechRecognition();
+                recognition.onstart = () => setIsLoading(true);
+                recognition.onend = () => setIsLoading(false);
+                recognition.onresult = (e) => {
+                  const transcript = e.results[0][0].transcript;
+                  setQuestion(prev => prev + (prev ? ' ' : '') + transcript);
+                };
+                recognition.start();
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.1)', color: 'var(--text)', border: '1px solid var(--border)',
+                borderRadius: '8px', padding: '0 10px', cursor: 'pointer', display: 'flex', alignItems: 'center'
+              }}
+              title="Speak your question"
+            >
+              <Mic size={18} />
+            </button>
             <input 
               type="text" 
               value={question}

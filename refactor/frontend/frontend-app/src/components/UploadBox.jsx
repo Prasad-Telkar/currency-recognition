@@ -102,7 +102,7 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
       </div>
 
       <div
-        className={`upload-box ${dragging ? "dragging" : ""} ${preview ? "has-preview" : ""}`}
+        className={`upload-box glass-panel ${dragging ? "dragging" : ""} ${preview ? "has-preview" : ""}`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
@@ -140,7 +140,7 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
           </>
         ) : (
           <div className="preview-area" style={{ position: 'relative' }}>
-            {(loading || checkingCounterfeit) && <span className="scan-line" />}
+            {(loading || checkingCounterfeit) && <div className="ai-scanning-line" />}
             <img src={heatmapUrl || preview} alt="Currency preview" />
             
             {/* AR Overlay on static preview if camera is not open */}
