@@ -243,7 +243,7 @@ export async function chatAI(question, context) {
     return data.answer;
   } catch (error) {
     console.error("AI Chat API Error:", error);
-    return "I am currently running in static demo mode since the backend is unreachable. Normally, I would provide a detailed analysis and answer your questions about currency trends, exchange rates, and financial news!";
+    throw new ApiError("NETWORK_ERROR", "Could not reach the AI Assistant.");
   }
 }
 export async function saveHistoryEntry(prediction) {
@@ -294,28 +294,5 @@ export async function fetchFinancialNews(currencyCode, countryName) {
   } catch (err) {
     console.error("fetchFinancialNews failed:", err);
   }
-  // Fallback mock news for GitHub Pages / when backend is unavailable
-  return [
-    {
-      title: "Global Markets Rally as Inflation Cools",
-      link: "#",
-      pubDate: new Date().toLocaleDateString(),
-      source: "MarketWatch",
-      imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      title: "Tech Stocks Hit Record Highs Despite Headwinds",
-      link: "#",
-      pubDate: new Date().toLocaleDateString(),
-      source: "Bloomberg",
-      imageUrl: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      title: "Central Banks Signal Potential Rate Cuts by Year End",
-      link: "#",
-      pubDate: new Date().toLocaleDateString(),
-      source: "Reuters",
-      imageUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800"
-    }
-  ];
+  return [];
 }
