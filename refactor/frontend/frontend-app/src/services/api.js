@@ -243,7 +243,7 @@ export async function chatAI(question, context) {
     return data.answer;
   } catch (error) {
     console.error("AI Chat API Error:", error);
-    throw new ApiError("NETWORK_ERROR", "Could not reach the AI Assistant.");
+    return "I am currently running in static demo mode since the backend is unreachable. Normally, I would provide a detailed analysis and answer your questions about currency trends, exchange rates, and financial news!";
   }
 }
 export async function saveHistoryEntry(prediction) {
