@@ -57,6 +57,9 @@ def predict_currency(image_input):
         raise Exception("Could not process the uploaded image.")
 
     try:
+        # Resize image to a maximum dimension of 1024 to dramatically speed up upload and prevent timeouts
+        pil_img.thumbnail((1024, 1024))
+        
         print("Using Gemini API for currency prediction...")
         
         prompt = (
