@@ -86,15 +86,40 @@ def predict_currency(image_input):
         
         model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         
-        response = gemini_client.models.generate_content(
-            model=model_name,
-            contents=[pil_img, prompt],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=CurrencyPrediction,
-                temperature=0.1
-            ),
-        )
+        import time
+        max_retries = 3
+        retry_delay = 2
+        
+        response = None
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=[pil_img, prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=CurrencyPrediction,
+                        temperature=0.1
+                    ),
+                )
+                break
+            except Exception as e:
+                last_error = e
+                error_msg = str(e).upper()
+                if "503" in error_msg or "429" in error_msg or "UNAVAILABLE" in error_msg or "QUOTA" in error_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Gemini API busy (Attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                    else:
+                        raise Exception("The AI service is currently experiencing high demand. Please try again in a few moments.")
+                else:
+                    raise e
+                    
+        if not response:
+            raise Exception("Failed to get a response from Gemini.")
         
         try:
             print("Gemini Inference response raw text:", response.text.encode('utf-8', 'ignore').decode('utf-8'))
