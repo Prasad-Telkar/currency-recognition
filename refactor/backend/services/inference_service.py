@@ -13,16 +13,7 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-gemini_client = None
 
-try:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if api_key:
-        gemini_client = genai.Client(api_key=api_key)
-    else:
-        logger.error("GEMINI_API_KEY not found in environment. Recognition will fail.")
-except Exception as e:
-    logger.error(f"Failed to initialize Gemini Client: {e}")
 
 class CurrencyPrediction(BaseModel):
     is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
@@ -39,10 +30,14 @@ def predict_currency(image_input):
     Accepts raw image bytes, processes the image,
     and returns a standardized prediction dictionary via Gemini.
     """
-    global gemini_client
-    
-    if not gemini_client:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
         raise Exception("CurrencyAI service is unconfigured (Missing API Key).")
+    
+    try:
+        gemini_client = genai.Client(api_key=api_key)
+    except Exception as e:
+        raise Exception(f"Failed to initialize AI client: {e}")
     
     pil_img = None
     if isinstance(image_input, (bytes, bytearray)):
