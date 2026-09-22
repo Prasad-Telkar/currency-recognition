@@ -1,114 +1,73 @@
-# Currency Recognition
+# CurrencyAI
 
-An image classification app that identifies currency notes across four countries — India, Nepal, Indonesia, and Brazil — using a CNN with transfer learning.
-
-## Overview
-
-This project takes a photo of a currency note and predicts its denomination and country of origin using a MobileNetV2-based CNN model, trained via transfer learning. Built as part of an 8-week mentorship program, backed by a literature review of prior classical image-processing and deep-learning approaches to currency recognition.
-
-## Team
-
-| Member | Role |
-|---|---|
-| Kunal | Research + Dataset Collection |
-| Vinay | Data Preparation + Feature Extraction |
-| Anushka | Model Training + Model Improvement |
-| Prasad | Interface + Integration + GitHub |
+CurrencyAI is a modern, AI-powered web application that instantly recognizes global currencies, banknotes, and coins from images. It uses Google's advanced Gemini multimodal AI to detect the country, currency code, and denomination, while also providing real-time exchange rates and historical conversion data.
 
 ## Features
 
-- Supports Indian, Nepali, Indonesian, and Brazilian currency notes
-- Upload a photo, get a denomination + currency prediction with confidence score
-- Built with transfer learning (MobileNetV2) for good accuracy with limited training data
-- Simple web interface (Streamlit), deployed and accessible via a public link
-- Design choices grounded in a literature review of classical and CNN-based currency recognition research
+- **Instant Recognition:** Upload a photo of any global currency, and the Gemini AI engine will instantly identify its country, currency name, ISO code, and denomination.
+- **Smart Quality Checks:** Built-in computer vision algorithms automatically detect heavily blurred or poorly lit images before sending them to the AI, giving you immediate feedback to retake the photo.
+- **Real-Time Conversion:** Once a currency is recognized, instantly convert its value to your local currency using up-to-date exchange rates.
+- **History Tracking:** All your scanned currencies are saved to a searchable, sortable local history. Export your findings to CSV anytime.
+- **Multilingual Support:** Fully internationalized (i18n) interface supporting English and Hindi (with scaffolding for more languages).
+- **Responsive & Accessible Design:** A beautiful, animated UI built with React, Tailwind CSS, and Framer Motion, optimized for mobile devices and screen readers.
 
 ## Tech Stack
 
-- **Language**: Python
-- **Model**: TensorFlow / Keras, MobileNetV2 (transfer learning)
-- **Training**: Google Colab (GPU)
-- **Interface**: Streamlit
-- **Version Control**: Git / GitHub
+### Frontend
+- **React.js (Vite)**
+- **Tailwind CSS** for styling
+- **Framer Motion** for micro-animations
+- **React-i18next** for internationalization
 
-## Project Structure
+### Backend
+- **Python (Flask)**
+- **Google GenAI SDK** (Gemini 3.6 Flash) for multimodal image inference
+- **OpenCV & Pillow** for image quality pre-processing and dynamic compression
+- **Gunicorn** for production serving
 
-```
-currency-recognition/
-├── data/
-│   ├── raw/              # raw downloaded images (not tracked in git)
-│   │   ├── india_notes/
-│   │   ├── nepal_notes/
-│   │   ├── indonesia_notes/
-│   │   └── brazil_notes/
-│   └── processed/        # train/val split, ready for training (not tracked in git)
-├── models/                # trained model files (not tracked in git if large)
-├── prepare_data.py        # organizes and splits raw data
-├── train.py                # trains the CNN model
-├── predict.py               # CLI script to test predictions on a single image
-├── app.py                    # Streamlit web interface
-├── requirements.txt
-├── literature_review.pdf   # research basis for the project's approach
-└── README.md
+## Environment Setup
+
+To run this project, you will need a Google Gemini API Key. 
+
+1. Go to [Google AI Studio](https://aistudio.google.com/) and create a free API key.
+2. In the `refactor/backend/` directory, create a `.env` file and add your key:
+```env
+GEMINI_API_KEY=your_api_key_here
 ```
 
-## Setup Instructions
+## Running Locally
 
-1. Clone the repo:
+### 1. Start the Backend (Flask)
 ```bash
-git clone https://github.com/Prasad-Telkar/currency-recognition.git
-cd currency-recognition
-```
-
-2. Create a virtual environment and install dependencies:
-```bash
-python -m venv venv
-source venv/bin/activate      # on Windows: venv\Scripts\activate
+cd refactor/backend
 pip install -r requirements.txt
+python app.py
 ```
+The backend will start on `http://localhost:5000`.
 
-3. Download the datasets (see Datasets section below) and place them in `data/raw/` following the folder structure.
-
-4. Prepare the data:
+### 2. Start the Frontend (React/Vite)
+Open a new terminal window:
 ```bash
-python prepare_data.py
+cd refactor/frontend/frontend-app
+npm install
+npm run dev
 ```
+The frontend will start on `http://localhost:5173`.
 
-5. Train the model (recommended on Google Colab for free GPU):
-```bash
-python train.py
-```
+## Deployment (Render)
 
-6. Run the app locally:
-```bash
-streamlit run app.py
-```
+This repository includes a `render.yaml` Blueprint to automatically deploy the application on Render.
 
-## Datasets
+1. Connect your GitHub repository to Render using the **Blueprint** feature.
+2. Render will automatically detect the `render.yaml` configuration.
+3. Supply your `GEMINI_API_KEY` as an environment variable in the Render Dashboard when prompted.
+4. Render will build both the frontend and backend, serving the static React app directly through the Flask backend on a single domain.
 
-| Country | Type | Source |
-|---|---|---|
-| India | Notes | [kaggle.com/datasets/shwetadalal/currency](https://www.kaggle.com/datasets/shwetadalal/currency) |
-| Nepal | Notes | [kaggle.com/datasets/sushantkumarsingh123/currency](https://www.kaggle.com/datasets/sushantkumarsingh123/currency) |
-| Indonesia | Notes | [kaggle.com/datasets/najmaaaaaaaaa/currencyhp/data](https://www.kaggle.com/datasets/najmaaaaaaaaa/currencyhp/data) |
-| Brazil | Notes | via [kagglehub](https://github.com/Kaggle/kagglehub) |
+> **Note on Timeouts:** The Render load balancer has a strict 100-second timeout. To prevent timeouts on large images (e.g. 10MB smartphone photos), the backend dynamically scales down incoming images to 1024x1024 pixels before sending them to the Gemini API, ensuring lightning-fast predictions.
 
-## Research Basis
+## Architecture
 
-Project design choices (MobileNetV2 + transfer learning, over classical hand-crafted features) are grounded in a literature review of prior currency/coin recognition work — see `literature_review.pdf`. Key finding: transfer learning on lightweight CNN backbones (MobileNet family) consistently outperforms classical image-processing methods and scales well to free-tier GPU training (Colab) with modest, self-collected datasets. Multi-currency note classification (vs. single-currency systems dominant in prior work) is identified as the project's key research gap contribution.
-
-## How It Works
-
-1. Images are organized and split into training/validation sets
-2. A pretrained MobileNetV2 model (trained on ImageNet) is fine-tuned on our currency dataset using transfer learning
-3. The trained model is loaded into a Streamlit app
-4. Users upload a photo, the app preprocesses it and returns the predicted denomination with a confidence score
-
-## Results
-
-*(Fill in once training is complete — e.g. validation accuracy, example predictions, known limitations)*
-
-## Future Improvements
-
-*(Fill in during Week 8 — e.g. support more currencies, improve accuracy on worn/damaged notes, mobile camera support)*
-
+- **`refactor/frontend/frontend-app/`**: Contains the complete React source code, organized by features (recognition, conversion, history) and reusable UI components.
+- **`refactor/backend/app.py`**: The Flask entry point. It serves the compiled React frontend from the `dist` folder and mounts API endpoints under `/api`.
+- **`refactor/backend/api/routes/`**: Flask Blueprints containing route definitions for `/predict`, `/currencies`, and `/health`.
+- **`refactor/backend/services/`**: Core logic including `inference_service.py` (Gemini API communication) and `quality_service.py` (OpenCV blur detection).
