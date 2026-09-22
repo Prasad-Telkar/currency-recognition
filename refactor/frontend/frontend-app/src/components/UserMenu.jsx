@@ -11,7 +11,9 @@ import {
   LogOut,
   Download,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  HelpCircle,
+  MessageCircle
 } from "lucide-react";
 
 export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, onLogout, isSidebarExpanded }) {
@@ -74,19 +76,14 @@ export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, on
             {t("nav.accountSettings", "Settings")}
           </button>
 
-          <button className="user-dropdown-item" onClick={() => go("converter")}>
-            <Download size={17} />
-            Download App
+          <button className="user-dropdown-item" onClick={() => go("help")}>
+            <HelpCircle size={17} />
+            Help & Support
           </button>
 
-          <button className="user-dropdown-item" onClick={() => go("currencies")}>
-            <KeyRound size={17} />
-            Import Keys
-          </button>
-
-          <button className="user-dropdown-item" onClick={() => go("history")}>
-            <ShieldCheck size={17} />
-            Security & Data
+          <button className="user-dropdown-item" onClick={() => go("feedback")}>
+            <MessageCircle size={17} />
+            Give Feedback
           </button>
 
           <div className="user-dropdown-divider" />

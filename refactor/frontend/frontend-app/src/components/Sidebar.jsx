@@ -11,11 +11,12 @@ import {
   Coins, 
   Languages,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  X
 } from "lucide-react";
 import UserMenu from "./UserMenu";
 
-export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
+export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout, isMobileOpen, setIsMobileOpen }) {
   const { t, i18n } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -49,13 +50,27 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
     }
   ];
 
+  const handleTabClick = (id) => {
+    setActiveTab(id);
+    if (setIsMobileOpen) setIsMobileOpen(false);
+  };
+
   return (
-    <aside 
-      className={`sidebar ${isExpanded ? "expanded" : "collapsed"}`}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-    >
-      <div className="sidebar-header" onClick={() => setActiveTab("home")}>
+    <>
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+      
+      <aside 
+        className={`sidebar ${isExpanded ? "expanded" : "collapsed"} ${isMobileOpen ? "mobile-open" : ""}`}
+        onMouseEnter={() => setIsExpanded(true)}
+        onMouseLeave={() => setIsExpanded(false)}
+      >
+        <div className="sidebar-header" onClick={() => handleTabClick("home")}>
         <div className="brand-icon">
           <Coins size={28} />
         </div>
@@ -63,6 +78,18 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
           <strong>CurrencyAI</strong>
           <span>Vision System</span>
         </div>
+        
+        {/* Mobile close button */}
+        <button 
+          className="sidebar-close-btn" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMobileOpen(false);
+          }}
+          aria-label="Close menu"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -77,7 +104,7 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
                   <button
                     key={item.id}
                     className={`nav-item ${isActive ? "active" : ""}`}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => handleTabClick(item.id)}
                   >
                     <div className="nav-icon">
                       <Icon size={18} strokeWidth={2.5} />
@@ -118,5 +145,6 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
         </div>
       </div>
     </aside>
+    </>
   );
 }

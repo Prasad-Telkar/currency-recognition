@@ -1,0 +1,84 @@
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 850px) {
+  .mobile-header {
+    display: flex;
+  }
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  padding: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.hamburger-btn:hover {
+  background-color: var(--surface-2);
+}
+
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.brand-icon-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.brand-text-mobile {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+}
+
+.mobile-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Adjust the user menu dropdown position on mobile */
+@media (max-width: 850px) {
+  .mobile-header-right .user-dropdown {
+    top: 50px;
+    right: 0;
+    left: auto;
+    width: 250px;
+  }
+}

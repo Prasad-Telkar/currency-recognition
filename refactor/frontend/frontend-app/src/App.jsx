@@ -33,6 +33,7 @@ import SolutionsBusiness from "./components/SolutionsBusiness";
 import SolutionsEducation from "./components/SolutionsEducation";
 import RecognitionGuide from "./components/RecognitionGuide";
 import Feedback from "./components/Feedback";
+import MobileHeader from "./components/MobileHeader";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -40,6 +41,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState("home");
   const [darkMode, setDarkMode] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -75,6 +77,15 @@ export default function App() {
       <div className="bg-orb orb-3"></div>
 
       <div className="app-layout">
+        <MobileHeader 
+          toggleSidebar={() => setIsMobileSidebarOpen(true)}
+          user={user}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          setActiveTab={setActiveTab}
+          onLogout={logout}
+        />
+
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -82,6 +93,8 @@ export default function App() {
           setDarkMode={setDarkMode}
           user={user}
           onLogout={logout}
+          isMobileOpen={isMobileSidebarOpen}
+          setIsMobileOpen={setIsMobileSidebarOpen}
         />
 
         <div className="main-content-wrapper">
