@@ -30,9 +30,10 @@ export default function AIAssistant({ context }) {
   };
 
   return (
-    <div className="ai-assistant-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 100 }}>
+    <div className="ai-assistant-container">
       {!isOpen ? (
         <button 
+          aria-label="Open AI Assistant"
           onClick={() => setIsOpen(true)}
           style={{
             width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
@@ -52,7 +53,9 @@ export default function AIAssistant({ context }) {
             <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Volume2 size={16} /> CurrencyAI Assistant
             </h3>
-            <button onClick={() => {
+            <button 
+              aria-label="Close AI Assistant"
+              onClick={() => {
                 window.speechSynthesis.cancel();
                 setIsOpen(false);
               }} style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
@@ -105,6 +108,7 @@ export default function AIAssistant({ context }) {
           <form onSubmit={handleSend} style={{ padding: '10px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
             <button
               type="button"
+              aria-label="Speak your question"
               onClick={() => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -138,7 +142,7 @@ export default function AIAssistant({ context }) {
                 borderRadius: '8px', padding: '10px', color: 'var(--text)'
               }}
             />
-            <button type="submit" disabled={isLoading || !question.trim()} style={{
+            <button type="submit" aria-label="Send message" disabled={isLoading || !question.trim()} style={{
               background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px',
               padding: '0 15px', cursor: 'pointer', display: 'flex', alignItems: 'center'
             }}>

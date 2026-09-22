@@ -9,7 +9,7 @@
 // Flask Backend URL
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000/api";
+  "/api";
 
 // ============================================================
 // CUSTOM API ERROR
@@ -190,10 +190,21 @@ export async function fetchHistory(query = "", sortBy = "newest") {
     const res = await fetch(`${API_BASE}/history?${params.toString()}`);
     if (res.ok) {
       const data = await res.json();
-      return data.map(item => ({
+      let historyArray = [];
+      if (Array.isArray(data)) {
+        historyArray = data;
+      } else if (data && Array.isArray(data.history)) {
+        historyArray = data.history;
+      }
+      
+      return historyArray.map(item => ({
         id: item.id,
         timestamp: item.timestamp,
-        result: item.result
+        result: item.result,
+        currencyName: item.currency_name,
+        currencyCode: item.currency_code,
+        confidence: item.confidence,
+        confidenceLevel: item.confidence_level
       }));
     }
     return [];

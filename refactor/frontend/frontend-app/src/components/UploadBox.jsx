@@ -68,7 +68,7 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
         if (blob) {
           const capturedFile = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
           handleFileChange({ target: { files: [capturedFile] } });
-          // Note: Not stopping camera immediately so AR can overlay
+          stopCamera();
         }
       }, "image/jpeg", 0.9);
     }
@@ -143,19 +143,7 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
             {(loading || checkingCounterfeit) && <div className="ai-scanning-line" />}
             <img src={heatmapUrl || preview} alt="Currency preview" />
             
-            {/* AR Overlay on static preview if camera is not open */}
-            {result && !isCameraOpen && !isCounterfeitMode && (
-              <div className="ar-overlay" style={{
-                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                background: 'rgba(0,0,0,0.6)', padding: '10px 20px', borderRadius: '10px',
-                color: '#22d3ee', fontSize: '24px', fontWeight: 'bold', border: '1px solid #22d3ee',
-                boxShadow: '0 0 15px rgba(34, 211, 238, 0.5)', backdropFilter: 'blur(4px)',
-                animation: 'pulse 2s infinite'
-              }}>
-                {result.denomination} {result.currencyCode}
-              </div>
-            )}
-            
+
             <div className="preview-info">
               <span>Selected image</span>
               <strong>{file?.name}</strong>

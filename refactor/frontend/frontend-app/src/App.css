@@ -22,11 +22,12 @@
    center;). That's what causes the wasted space on both sides —
    this resets it so the app actually goes edge to edge. */
 #root {
-  max-width: none;
+  max-width: 100vw;
   width: 100%;
   margin: 0;
   padding: 0;
   text-align: left;
+  overflow-x: hidden;
 }
 
 :root {
@@ -178,6 +179,7 @@ input {
 
 button {
   cursor: pointer;
+  min-height: 44px;
 }
 
 button:disabled {
@@ -1701,7 +1703,7 @@ button:disabled {
 
   outline: none;
 
-  color: var(--ivory);
+  color: var(--text);
 
   background: var(--surface);
 }
@@ -2160,7 +2162,7 @@ button:disabled {
 .site-footer {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.18);
-  padding: 56px 6% 0;
+  padding: 56px 6% env(safe-area-inset-bottom, 0);
 }
 
 .footer-top {
@@ -2227,6 +2229,9 @@ button:disabled {
   font-size: 13.5px;
   text-align: left;
   text-decoration: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .footer-col a:hover,
@@ -2234,50 +2239,7 @@ button:disabled {
   color: var(--gold-bright);
 }
 
-.footer-badges {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 190px;
-}
-
-.store-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 14px;
-
-  color: var(--text);
-  background: var(--surface-2);
-  text-decoration: none;
-
-  transition: border-color 0.15s ease;
-}
-
-.store-badge:hover {
-  border-color: var(--gold-bright);
-}
-
-.store-badge svg {
-  color: var(--gold-bright);
-  flex-shrink: 0;
-}
-
-.store-badge small {
-  display: block;
-  color: var(--muted);
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.store-badge strong {
-  display: block;
-  font-size: 13.5px;
-}
+/* Removed badges */
 
 .footer-bottom {
   max-width: 1300px;
@@ -2369,6 +2331,21 @@ button:disabled {
 
 .app.light .site-footer {
   background: rgba(0, 0, 0, 0.03);
+}
+
+/* =========================================================
+   AI ASSISTANT
+   ========================================================= */
+
+.ai-assistant-container {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: max(20px, env(safe-area-inset-right));
+  z-index: 100;
+  pointer-events: none;
+}
+.ai-assistant-container > * {
+  pointer-events: auto;
 }
 
 /* =========================================================
@@ -3864,6 +3841,7 @@ button:disabled {
   position: relative;
   text-align: left;
   width: 100%; /* Instead of fixed 256px to avoid bleeding */
+  min-height: 44px;
 }
 
 .sidebar.expanded .nav-item {

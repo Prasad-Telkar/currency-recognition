@@ -24,7 +24,15 @@ import Footer from "./components/Footer";
 import AIAssistant from "./components/AIAssistant";
 import Sidebar from "./components/Sidebar";
 import AICapabilities from "./components/AICapabilities";
-import AboutUs from "./components/AboutUs";
+import AboutCurrencyAI from "./components/AboutCurrencyAI";
+import CurrencyGuide from "./components/CurrencyGuide";
+import ApiDocs from "./components/ApiDocs";
+import HelpCenter from "./components/HelpCenter";
+import SolutionsTravelers from "./components/SolutionsTravelers";
+import SolutionsBusiness from "./components/SolutionsBusiness";
+import SolutionsEducation from "./components/SolutionsEducation";
+import RecognitionGuide from "./components/RecognitionGuide";
+import Feedback from "./components/Feedback";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -103,14 +111,21 @@ export default function App() {
             )}
 
             {activeTab === "ai" && <AICapabilities />}
-            {activeTab === "about" && <AboutUs />}
+            {activeTab === "about" && <AboutCurrencyAI />}
             {activeTab === "converter" && <ManualConverter conversion={conversion} />}
             {activeTab === "currencies" && <CurrencyGrid />}
             {activeTab === "history" && <HistoryList history={history} />}
             {activeTab === "news" && <NewsSection />}
+            {activeTab === "currency-guide" && <CurrencyGuide setActiveTab={setActiveTab} />}
+            {activeTab === "api-docs" && <ApiDocs setActiveTab={setActiveTab} />}
+            {activeTab === "help" && <HelpCenter setActiveTab={setActiveTab} />}
+            {activeTab === "solutions-travelers" && <SolutionsTravelers setActiveTab={setActiveTab} />}
+            {activeTab === "solutions-business" && <SolutionsBusiness setActiveTab={setActiveTab} />}
+            {activeTab === "solutions-education" && <SolutionsEducation setActiveTab={setActiveTab} />}
+            {activeTab === "recognition-guide" && <RecognitionGuide setActiveTab={setActiveTab} />}
+            {activeTab === "feedback" && <Feedback setActiveTab={setActiveTab} />}
+            <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
           </main>
-
-          <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
 
           <Footer setActiveTab={setActiveTab} />
         </div>

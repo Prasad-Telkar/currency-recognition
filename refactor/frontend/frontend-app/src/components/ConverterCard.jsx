@@ -16,7 +16,13 @@ export default function ConverterCard({ result, conversion, onOpenFullConverter 
 
   useEffect(() => {
     if (result?.currencyCode && result?.denomination) {
-      runConversion(result.denomination, result.currencyCode, targetCurrency);
+      let currentTarget = targetCurrency;
+      if (result.currencyCode === currentTarget) {
+        currentTarget = result.currencyCode === "USD" ? "EUR" : "USD";
+        changeTargetCurrency(currentTarget, result.denomination, result.currencyCode);
+      } else {
+        runConversion(result.denomination, result.currencyCode, currentTarget);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result?.currencyCode, result?.denomination]);

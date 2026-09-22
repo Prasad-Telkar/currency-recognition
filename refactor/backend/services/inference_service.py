@@ -1,185 +1,122 @@
 """
-Currency recognition inference with Google Gemini API (Primary) and TensorFlow/Keras model (Fallback).
+Currency recognition inference with Google Gemini API.
 """
 
 import os
 import json
 import logging
-import numpy as np
-import cv2
+from io import BytesIO
 
-from data.currencies import CURRENCIES_BY_COUNTRY
+from google import genai
+from google.genai import types
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "currency_model.keras")
-CLASS_PATH = os.path.join(BASE_DIR, "model", "class_names.json")
-
-model = None
-class_names = []
 gemini_client = None
 
 try:
-    import easyocr
-    # Initialize reader globally so it doesn't reload on every request
-    reader = easyocr.Reader(['en'], gpu=False)
-except ImportError:
-    reader = None
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        gemini_client = genai.Client(api_key=api_key)
+    else:
+        logger.error("GEMINI_API_KEY not found in environment. Recognition will fail.")
+except Exception as e:
+    logger.error(f"Failed to initialize Gemini Client: {e}")
 
-COUNTRY_MAP = {
-    "bangladesh": "Bangladesh",
-    "egypt": "Egypt",
-    "ghana": "Ghana",
-    "india": "India",
-    "indonesia": "Indonesia",
-    "jordan": "Jordan",
-    "nepal": "Nepal",
-    "pakistan": "Pakistan",
-    "thailand": "Thailand",
-    "turkey": "Turkey",
-    "usa": "USA",
-    "euro": "Euro",
-}
-
-
-def load_model_if_needed():
-    global model, class_names
-    if model is not None:
-        return model
-
-    if os.path.exists(MODEL_PATH) and os.path.exists(CLASS_PATH):
-        try:
-            os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
-            import tensorflow as tf
-            print("Loading CurrencyAI TensorFlow model from:", MODEL_PATH)
-            model = tf.keras.models.load_model(MODEL_PATH)
-            with open(CLASS_PATH, "r", encoding="utf-8") as f:
-                class_names = json.load(f)
-            print(f"CurrencyAI model loaded successfully with {len(class_names)} classes!")
-            return model
-        except Exception as e:
-            logger.error("Failed to load TensorFlow model: %s", e)
-            print("Error loading model:", e)
-    return None
-
-
-# Load model on startup
-load_model_if_needed()
-
+class CurrencyPrediction(BaseModel):
+    is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
+    currency_name: str = Field(description="The name of the currency (e.g. 'US Dollar', 'Indian Rupee', 'Euro')")
+    currency_code: str = Field(description="The 3-letter ISO currency code (e.g. 'USD', 'INR', 'EUR')")
+    symbol: str = Field(description="The currency symbol (e.g. '$', '₹', '€')")
+    denomination: str = Field(description="The denomination value as a string (e.g. '500', '20'). Return '0' or empty if not sufficiently visible.")
+    confidence: float = Field(description="The confidence score out of 100")
+    country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
+    explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
 
 def predict_currency(image_input):
     """
-    Accepts raw image bytes or a file path string, processes the image,
-    and returns a standardized prediction dictionary.
+    Accepts raw image bytes, processes the image,
+    and returns a standardized prediction dictionary via Gemini.
     """
-    global model, class_names, reader
+    global gemini_client
     
-    img = None
+    if not gemini_client:
+        raise Exception("CurrencyAI service is unconfigured (Missing API Key).")
+    
+    pil_img = None
     if isinstance(image_input, (bytes, bytearray)):
-        arr = np.frombuffer(image_input, np.uint8)
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    elif isinstance(image_input, str) and os.path.exists(image_input):
-        img = cv2.imread(image_input)
-
-    # 1. Primary: Local Keras Model with OCR fallback
-    if model is None:
-        load_model_if_needed()
-
-    if model is not None and class_names and img is not None:
         try:
-            print("Using Local Keras Model for currency prediction...")
-            img_resized = cv2.resize(img, (224, 224))
-            img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-            # Model was trained with 0-1 normalization
-            img_array = np.expand_dims(img_rgb.astype(np.float32) / 255.0, axis=0)
+            from PIL import Image
+            pil_img = Image.open(BytesIO(image_input))
+        except Exception:
+            raise Exception("Invalid image format.")
+    elif isinstance(image_input, str) and os.path.exists(image_input):
+        try:
+            from PIL import Image
+            pil_img = Image.open(image_input)
+        except Exception:
+            raise Exception("Invalid image path.")
 
-            predictions = model.predict(img_array, verbose=0)
-            class_index = int(np.argmax(predictions))
-            confidence_score = float(np.max(predictions))
-            predicted_class = class_names[class_index]
+    if not pil_img:
+        raise Exception("Could not process the uploaded image.")
+
+    try:
+        print("Using Gemini API for currency prediction...")
+        
+        prompt = (
+            "You are the currency recognition engine for CurrencyAI.\n"
+            "Analyze the provided image carefully.\n"
+            "Determine whether the image contains a recognizable banknote or coin.\n\n"
+            "If it is a currency:\n"
+            "- identify the country/region\n"
+            "- identify the currency\n"
+            "- identify the ISO currency code\n"
+            "- identify the denomination when visible\n"
+            "- provide the currency symbol when applicable\n"
+            "- provide a confidence estimate\n"
+            "- briefly explain the visual evidence used\n\n"
+            "If the image is not a currency or the currency cannot be reliably identified:\n"
+            "- set is_currency to false\n"
+            "- do not invent a currency or denomination\n"
+            "- explain why recognition was unsuccessful\n\n"
+            "Never guess a denomination when it is not sufficiently visible.\n"
+            "Return ONLY the required structured response."
+        )
+        
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+        
+        response = gemini_client.models.generate_content(
+            model=model_name,
+            contents=[pil_img, prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=CurrencyPrediction,
+                temperature=0.1
+            ),
+        )
+        
+        try:
+            print("Gemini Inference response raw text:", response.text.encode('utf-8', 'ignore').decode('utf-8'))
+        except:
+            pass
+        
+        try:
+            if hasattr(response, 'parsed') and response.parsed:
+                if isinstance(response.parsed, BaseModel):
+                    result_dict = response.parsed.model_dump(by_alias=True)
+                else:
+                    result_dict = response.parsed
+            else:
+                result_dict = json.loads(response.text)
             
-            # --- OCR Fallback Logic ---
-            ocr_text = ""
-            if reader is not None:
-                print("Running EasyOCR to verify prediction...")
-                # Run OCR on the original high-res image (RGB)
-                img_rgb_full = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                ocr_results = reader.readtext(img_rgb_full, detail=0)
-                ocr_text = " ".join(ocr_results).lower()
-                print("Extracted Text:", ocr_text)
-                
-                import re
-                country_keywords = {
-                    "bangladesh": ["bangladesh"],
-                    "egypt": ["egypt", "central bank of egypt"],
-                    "ghana": ["ghana"],
-                    "india": ["india", "reserve bank of india", "rupees"], # rupees alone is mostly india or pakistan, but handled if 'state bank' is also there
-                    "indonesia": ["indonesia", "bank indonesia"],
-                    "jordan": ["jordan", "central bank of jordan"],
-                    "nepal": ["nepal"],
-                    "pakistan": ["pakistan", "state bank"],
-                    "thailand": ["thailand", "thai"],
-                    "turkey": ["turkey", "turkiye"],
-                    "usa": ["united states of america", "usa", "federal reserve", "dollar"],
-                    "euro": ["euro", "ecb", "bce", "ezb"],
-                }
-                
-                found_country = None
-                for country, keywords in country_keywords.items():
-                    if any(kw in ocr_text for kw in keywords):
-                        found_country = country
-                        break
-                
-                denominations = re.findall(r'\b(1|2|5|10|20|50|100|200|500|1000|2000|5000)\b', ocr_text)
-                found_denomination = denominations[0] if denominations else None
-                
-                if found_country and found_denomination:
-                    candidate_class = f"{found_country}_{found_denomination}"
-                    if candidate_class in class_names:
-                        print(f"OCR override triggered: {candidate_class}")
-                        predicted_class = candidate_class
-                        confidence_score = max(0.95, confidence_score) # Boost confidence
-                    else:
-                        print(f"OCR detected {candidate_class}, but it is not in class_names.")
-            # --------------------------
-
-            parts = predicted_class.split("_")
-            country_key = parts[0].lower()
-            denomination = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
-            country_name = COUNTRY_MAP.get(country_key, country_key.capitalize())
-            currency = CURRENCIES_BY_COUNTRY.get(country_name, {})
-
-            return {
-                "currency_type": "banknote",
-                "country": country_name,
-                "currency_name": currency.get("name", country_name),
-                "currency_code": currency.get("code", ""),
-                "currency_symbol": currency.get("symbol", ""),
-                "denomination": denomination,
-                "confidence": round(confidence_score * 100, 2),
-                "class": predicted_class,
-            }
-        except Exception as e:
-            logger.error("Real model inference failed, using mock fallback: %s", e)
-            print("Inference error:", e)
-
-    # 2. Last Resort Fallback
-    print("Using Random Mock Data for currency prediction...")
-    import random
-    sample = random.choice([
-        {"country": "India", "denomination": 500, "confidence": 93.4},
-        {"country": "India", "denomination": 100, "confidence": 78.2},
-        {"country": "USA", "denomination": 20, "confidence": 91.2},
-        {"country": "Euro", "denomination": 10, "confidence": 88.7},
-    ])
-    currency = CURRENCIES_BY_COUNTRY.get(sample["country"], {})
-    return {
-        "currency_type": "banknote",
-        "country": sample["country"],
-        "currency_name": currency.get("name", sample["country"]),
-        "currency_code": currency.get("code", ""),
-        "currency_symbol": currency.get("symbol", ""),
-        "denomination": sample["denomination"],
-        "confidence": sample["confidence"],
-    }
+            return result_dict
+            
+        except Exception as parse_e:
+            print("Failed to parse Gemini response:", parse_e)
+            print("Raw response text:", response.text)
+            raise Exception("Failed to parse recognition results.")
+            
+    except Exception as e:
+        logger.error("Gemini API inference failed: %s", str(e).encode('utf-8', 'ignore').decode('utf-8'))
+        raise Exception(f"Recognition failed: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")

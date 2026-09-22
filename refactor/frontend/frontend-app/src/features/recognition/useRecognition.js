@@ -67,9 +67,12 @@ export function useRecognition({ onResult } = {}) {
       onResult?.(merged);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError({ code: err.code, message: err.message, details: err.details });
+        // Provide friendly message instead of raw API error unless backend gives a specific message
+        const isNetworkError = err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR";
+        const message = isNetworkError ? "We're having trouble connecting to the CurrencyAI service. Please try again." : err.message;
+        setError({ code: err.code, message: message, details: err.details });
       } else {
-        setError({ code: "UNKNOWN_ERROR", message: "Something went wrong. Please try again." });
+        setError({ code: "UNKNOWN_ERROR", message: "We couldn't recognize this image. Try taking a clearer photo with better lighting." });
       }
     } finally {
       setLoading(false);

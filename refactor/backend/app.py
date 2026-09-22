@@ -10,8 +10,12 @@ from services.ai_service import ai_bp
 from services.counterfeit_service import counterfeit_bp
 
 
+import os
+
 def create_app():
-    app = Flask(__name__)
+    # Configure Flask to serve the React frontend build folder
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'frontend-app', 'dist'))
+    app = Flask(__name__, static_folder=frontend_dir, static_url_path='/')
     app.config.from_object(Config)
 
     # Enable CORS for frontend development
@@ -43,6 +47,14 @@ def create_app():
             "status": "ok",
             "model_version": model_status,
         }
+
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        if path != "" and os.path.exists(app.static_folder + '/' + path):
+            return app.send_static_file(path)
+        else:
+            return app.send_static_file('index.html')
 
     return app
 

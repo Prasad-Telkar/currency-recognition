@@ -1,4 +1,5 @@
 import time
+import logging
 
 from flask import Blueprint, request, jsonify
 
@@ -6,6 +7,8 @@ from services.quality_service import analyze_quality
 from services.inference_service import predict_currency
 from schemas.prediction_schema import build_prediction_response, build_error_response
 from utils.image_validation import validate_image_file, ImageValidationError
+
+logger = logging.getLogger(__name__)
 
 predict_bp = Blueprint("predict", __name__)
 
@@ -39,7 +42,16 @@ def predict():
             },
         )), 422
 
-    prediction = predict_currency(image_bytes)
+    try:
+        prediction = predict_currency(image_bytes)
+    except Exception as e:
+        logger.error("Predict exception: %s", e)
+        return jsonify(build_error_response("RECOGNITION_ERROR", str(e))), 500
+
+    if not prediction.get("is_currency", True):
+        explanation = prediction.get("explanation", "We couldn't confidently identify this currency. Try taking a clearer photo with the entire note visible.")
+        return jsonify(build_error_response("NOT_CURRENCY", explanation)), 400
+
     processing_time_ms = round((time.time() - start) * 1000)
 
     response = build_prediction_response(

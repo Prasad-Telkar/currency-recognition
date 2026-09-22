@@ -1,10 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Coins, Sparkles, Globe as GlobeIcon, ChevronDown } from "lucide-react";
+import { Coins, Globe as GlobeIcon, ChevronDown } from "lucide-react";
 import { XIcon, FacebookIcon, InstagramIcon, LinkedinIcon } from "./icons/SocialIcons";
 
-// NOTE: Solutions/Legal/Company links and the three app-store badges are
-// placeholders (href="#") — there's no privacy policy or mobile app yet.
-// Point them at real pages once they exist.
 export default function Footer({ setActiveTab }) {
   const { i18n } = useTranslation();
 
@@ -12,6 +9,7 @@ export default function Footer({ setActiveTab }) {
     const nextLang = i18n.language === "hi" ? "en" : "hi";
     i18n.changeLanguage(nextLang);
   };
+  
   return (
     <footer className="site-footer">
       <div className="footer-top">
@@ -24,66 +22,37 @@ export default function Footer({ setActiveTab }) {
         </div>
 
         <div className="footer-col">
-          <h4>Product</h4>
+          <h4>PRODUCT</h4>
           <ul>
-            <li><button onClick={() => setActiveTab("home")}>Home</button></li>
-            <li><button onClick={() => setActiveTab("converter")}>Converter</button></li>
-            <li><button onClick={() => setActiveTab("currencies")}>Currencies</button></li>
-            <li><button onClick={() => setActiveTab("history")}>History</button></li>
-            <li><button onClick={() => setActiveTab("ai")}>What AI Can Do</button></li>
+            <li><button onClick={() => setActiveTab("about")}>About CurrencyAI</button></li>
+            <li><button onClick={() => setActiveTab("currency-guide")}>Currency Guide</button></li>
+            <li><button onClick={() => setActiveTab("api-docs")}>API Documentation</button></li>
+            <li><button onClick={() => setActiveTab("help")}>Help Center</button></li>
           </ul>
         </div>
 
         <div className="footer-col">
-          <h4>Resources</h4>
+          <h4>SOLUTIONS</h4>
           <ul>
-            <li><button onClick={() => setActiveTab("currencies")}>Currency Guide</button></li>
-            <li><button onClick={() => setActiveTab("news")}>Finance News</button></li>
-            <li><a href="#">API Docs</a></li>
-            <li><a href="#">Help Center</a></li>
+            <li><button onClick={() => setActiveTab("solutions-travelers")}>Travelers</button></li>
+            <li><button onClick={() => setActiveTab("solutions-business")}>Businesses</button></li>
+            <li><button onClick={() => setActiveTab("solutions-education")}>Educators</button></li>
           </ul>
         </div>
 
         <div className="footer-col">
-          <h4>Solutions</h4>
+          <h4>RESOURCES</h4>
           <ul>
-            <li><a href="#">For Travelers</a></li>
-            <li><a href="#">For Businesses</a></li>
-            <li><a href="#">For Educators</a></li>
+            <li><button onClick={() => setActiveTab("recognition-guide")}>Recognition Guide</button></li>
+            <li><button onClick={() => setActiveTab("feedback")}>Feedback</button></li>
           </ul>
         </div>
 
         <div className="footer-col">
-          <h4>Legal</h4>
+          <h4>COMPANY</h4>
           <ul>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms &amp; Conditions</a></li>
-            <li><a href="#">Cookies</a></li>
+            <li><button onClick={() => setActiveTab("help")}>Contact</button></li>
           </ul>
-        </div>
-
-        <div className="footer-col">
-          <h4>Company</h4>
-          <ul>
-            <li><button onClick={() => setActiveTab("about")}>About Us</button></li>
-            <li><a href="#">Contact Us</a></li>
-            <li><a href="#">Blog</a></li>
-          </ul>
-        </div>
-
-        <div className="footer-badges">
-          <a href="#" className="store-badge">
-            <Sparkles size={20} />
-            <span><small>Get it on</small><strong>Google Play</strong></span>
-          </a>
-          <a href="#" className="store-badge">
-            <Sparkles size={20} />
-            <span><small>Download on the</small><strong>App Store</strong></span>
-          </a>
-          <a href="#" className="store-badge">
-            <Sparkles size={20} />
-            <span><small>Get the</small><strong>Desktop App</strong></span>
-          </a>
         </div>
       </div>
 

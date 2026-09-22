@@ -18,7 +18,7 @@ def confidence_level(confidence):
 
 def build_prediction_response(prediction, image_analysis, processing_time_ms, model_version="v1.0-mock"):
     level = confidence_level(prediction["confidence"])
-    legacy_label = f"{prediction['country']}_{prediction['denomination']}"
+    legacy_label = f"{prediction.get('country', 'unknown')}_{prediction.get('denomination', '0')}"
 
     return {
         "success": True,
