@@ -5,7 +5,7 @@ services:
     plan: free
     env: python
     buildCommand: "./render-build.sh"
-    startCommand: "cd backend && gunicorn app:app --workers 2"
+    startCommand: "cd backend && gunicorn app:app --workers 2 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
