@@ -41,11 +41,9 @@ def create_app():
     @app.route("/health")
     @app.route("/api/health")
     def health():
-        from services.inference_service import model
-        model_status = "keras-model" if model is not None else Config.MODEL_VERSION
         return {
             "status": "ok",
-            "model_version": model_status,
+            "model_version": Config.MODEL_VERSION,
         }
 
     @app.route('/', defaults={'path': ''})
