@@ -2,6 +2,7 @@ services:
   - type: web
     name: currencyai
     rootDir: refactor
+    plan: free
     env: python
     buildCommand: "./render-build.sh"
     startCommand: "cd backend && gunicorn app:app --workers 2"
