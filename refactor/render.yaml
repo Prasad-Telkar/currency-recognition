@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: currencyai
+    env: python
+    buildCommand: "./render-build.sh"
+    startCommand: "cd backend && gunicorn app:app --workers 2"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GEMINI_API_KEY
+        sync: false
