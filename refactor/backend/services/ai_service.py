@@ -5,18 +5,13 @@ from google.genai import types
 
 ai_bp = Blueprint('ai', __name__)
 
-# Initialize client using environment variable GEMINI_API_KEY
-# If GEMINI_API_KEY is not set, this will fail when the endpoint is hit,
-# so we handle it gracefully.
-try:
-    client = genai.Client()
-except Exception as e:
-    client = None
-    print(f"Failed to initialize Gemini Client: {e}")
-
 @ai_bp.route('/chat', methods=['POST'])
 def chat():
-    if not client:
+    # Initialize client locally to prevent Gunicorn worker fork deadlocks
+    try:
+        client = genai.Client()
+    except Exception as e:
+        print(f"Failed to initialize Gemini Client: {e}")
         return jsonify({'error': 'Gemini API client is not configured. Please set GEMINI_API_KEY in .env'}), 500
         
     data = request.get_json()
@@ -59,7 +54,7 @@ def chat():
     
     try:
         interaction = client.interactions.create(
-            model='gemini-3.6-flash',
+            model='gemini-3.5-flash-lite',
             input=question,
             system_instruction=system_instruction,
         )

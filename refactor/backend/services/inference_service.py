@@ -25,6 +25,65 @@ class CurrencyPrediction(BaseModel):
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
     explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
 
+# Local Fallback Model Integration
+import numpy as np
+
+_fallback_model = None
+_class_names = []
+
+def load_fallback_model():
+    global _fallback_model, _class_names
+    if _fallback_model is not None:
+        return True
+        
+    model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'fallback_model.keras')
+    class_names_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'class_names.json')
+    
+    if not os.path.exists(model_path) or not os.path.exists(class_names_path):
+        return False
+        
+    try:
+        import tensorflow as tf # type: ignore
+        _fallback_model = tf.keras.models.load_model(model_path)
+        with open(class_names_path, 'r') as f:
+            _class_names = json.load(f)
+        logger.info("Successfully loaded offline fallback model.")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to load fallback model: {e}")
+        return False
+
+def local_fallback_predict(pil_img):
+    if not load_fallback_model():
+        return None
+        
+    try:
+        import tensorflow as tf # type: ignore
+        # Resize image to match model input
+        img_resized = pil_img.resize((224, 224))
+        img_array = tf.keras.preprocessing.image.img_to_array(img_resized)
+        img_array = tf.expand_dims(img_array, 0)
+        
+        predictions = _fallback_model.predict(img_array)
+        score = tf.nn.softmax(predictions[0])
+        confidence = 100 * np.max(score)
+        
+        predicted_class = _class_names[np.argmax(score)]
+        
+        return {
+            "is_currency": True,
+            "currency_name": f"{predicted_class} (Offline Fallback)",
+            "currency_code": predicted_class,
+            "symbol": "",
+            "denomination": "Unknown",
+            "confidence": float(confidence),
+            "country": "Unknown",
+            "explanation": "Predicted using offline fallback model due to Gemini API failure."
+        }
+    except Exception as e:
+        logger.error(f"Fallback inference failed: {e}")
+        return None
+
 def predict_currency(image_input):
     """
     Accepts raw image bytes, processes the image,
@@ -82,7 +141,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response."
         )
         
-        model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         
         import time
         max_retries = 3
@@ -112,8 +171,16 @@ def predict_currency(image_input):
                         time.sleep(retry_delay)
                         retry_delay *= 2
                     else:
-                        raise Exception("The AI service is currently experiencing high demand. Please try again in a few moments.")
+                        logger.error("Gemini API is unreachable. Falling back to local model.")
+                        fallback_result = local_fallback_predict(pil_img)
+                        if fallback_result:
+                            return fallback_result
+                        raise Exception("The AI service is currently experiencing high demand. Local fallback model is not trained yet. Please try again later.")
                 else:
+                    logger.error(f"Gemini API Error: {error_msg}. Falling back to local model.")
+                    fallback_result = local_fallback_predict(pil_img)
+                    if fallback_result:
+                        return fallback_result
                     raise e
                     
         if not response:
