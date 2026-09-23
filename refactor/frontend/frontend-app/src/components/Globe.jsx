@@ -25,7 +25,6 @@ function Globe() {
       0.1,
       100
     );
-    camera.position.set(0, 0, 7);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -266,24 +265,46 @@ function Globe() {
     animate();
 
     // -----------------------------
-    // RESPONSIVE
+    // RESPONSIVE / ASPECT SIZING
+    // Ensures the orbiting carousel currencies are NEVER cropped on sides
     // -----------------------------
-    function handleResize() {
+    function updateCameraSizing() {
       if (!container) return;
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      const width = container.clientWidth || 320;
+      const height = container.clientHeight || 320;
       camera.aspect = width / height;
+
+      // Orbit max radius is 3.3, sprite scale is 0.65 (half-width ~0.33) -> ~3.63
+      // We set target half-span to 4.1 to provide a comfortable, aesthetic margin
+      const targetHalfSpan = 4.1;
+      const vFovRad = THREE.MathUtils.degToRad(camera.fov / 2);
+
+      const zForHeight = targetHalfSpan / Math.tan(vFovRad);
+      const zForWidth = targetHalfSpan / (Math.tan(vFovRad) * camera.aspect);
+
+      camera.position.z = Math.max(zForHeight, zForWidth, 8.2);
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
     }
-    window.addEventListener("resize", handleResize);
+
+    updateCameraSizing();
+    window.addEventListener("resize", updateCameraSizing);
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        updateCameraSizing();
+      });
+      resizeObserver.observe(container);
+    }
 
     // -----------------------------
     // CLEANUP
     // -----------------------------
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", updateCameraSizing);
+      if (resizeObserver) resizeObserver.disconnect();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);

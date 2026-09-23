@@ -42,7 +42,7 @@
     "detected": "Detected denomination",
     "modelConfidence": "MODEL CONFIDENCE",
     "confidenceNote": "The AI model's confidence in this prediction.",
-    "speak": "Speak Result",
+    "speak": "Speak Results",
     "stopSpeaking": "Stop",
     "news": "Finance News",
     "info": "Currency Info"

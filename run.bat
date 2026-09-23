@@ -9,7 +9,7 @@ cd /d "%SCRIPT_DIR%refactor\backend"
 echo Starting Flask Backend (Port 5000)...
 start "CurrencyAI Backend (Flask)" cmd /k "python app.py"
 
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 
 cd /d "%SCRIPT_DIR%refactor\frontend\frontend-app"
 echo Starting Vite Frontend (Port 5173)...

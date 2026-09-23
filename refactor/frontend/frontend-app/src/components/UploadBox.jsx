@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Upload, Camera, X, Sparkles, Image as ImageIcon, ScanLine } from "lucide-react";
 import { useState, useRef } from "react";
-import { checkCounterfeit } from "../services/api";
 
 export default function UploadBox({ recognition, onPredict, fileInputRef, cameraInputRef }) {
   const { t } = useTranslation();
@@ -10,10 +9,6 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
-  
-  const [isCounterfeitMode, setIsCounterfeitMode] = useState(false);
-  const [heatmapUrl, setHeatmapUrl] = useState(null);
-  const [checkingCounterfeit, setCheckingCounterfeit] = useState(false);
   
   const { result } = recognition;
 
@@ -74,23 +69,6 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
     }
   };
 
-  const handlePredict = async () => {
-    setHeatmapUrl(null);
-    if (isCounterfeitMode) {
-      setCheckingCounterfeit(true);
-      try {
-        const heatmap = await checkCounterfeit(file);
-        setHeatmapUrl(heatmap);
-      } catch (err) {
-        alert("Counterfeit check failed: " + err.message);
-      } finally {
-        setCheckingCounterfeit(false);
-      }
-    } else {
-      onPredict();
-    }
-  };
-
   return (
     <section className="recognizer-section">
       <div className="section-heading">
@@ -123,31 +101,18 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
                 {t("recognizer.camera")}
               </button>
             </div>
-            
-            <div className="mode-toggle" style={{marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
-              <label style={{ fontSize: '14px', color: 'var(--muted)' }}>
-                <input 
-                  type="checkbox" 
-                  checked={isCounterfeitMode} 
-                  onChange={(e) => setIsCounterfeitMode(e.target.checked)} 
-                  style={{ marginRight: '8px' }}
-                />
-                Counterfeit Heatmap Mode
-              </label>
-            </div>
 
             <small>{t("recognizer.hint")}</small>
           </>
         ) : (
           <div className="preview-area" style={{ position: 'relative' }}>
-            {(loading || checkingCounterfeit) && <div className="ai-scanning-line" />}
-            <img src={heatmapUrl || preview} alt="Currency preview" />
-            
+            {loading && <div className="ai-scanning-line" />}
+            <img src={preview} alt="Currency preview" />
 
             <div className="preview-info">
               <span>Selected image</span>
               <strong>{file?.name}</strong>
-              <button className="remove-button" onClick={() => { removeImage(); setHeatmapUrl(null); }}>
+              <button className="remove-button" onClick={removeImage}>
                 <X size={14} />
                 {t("recognizer.remove")}
               </button>
@@ -171,7 +136,7 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
               <video ref={videoRef} autoPlay playsInline></video>
               
               {/* AR Overlay on live video feed */}
-              {result && !isCounterfeitMode && (
+              {result && (
                 <div className="ar-overlay" style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                   background: 'rgba(0,0,0,0.6)', padding: '10px 20px', borderRadius: '10px',
@@ -199,16 +164,16 @@ export default function UploadBox({ recognition, onPredict, fileInputRef, camera
       )}
 
       {file && (
-        <button className="predict-button" onClick={handlePredict} disabled={loading || checkingCounterfeit}>
-          {(loading || checkingCounterfeit) ? (
+        <button className="predict-button" onClick={onPredict} disabled={loading}>
+          {loading ? (
             <>
               <span className="spinner" />
-              {isCounterfeitMode ? "Scanning for Forgeries..." : t("recognizer.analyzing")}
+              {t("recognizer.analyzing")}
             </>
           ) : (
             <>
               <Sparkles size={17} />
-              {isCounterfeitMode ? "Run Counterfeit Check" : t("recognizer.recognize")}
+              {t("recognizer.recognize")}
             </>
           )}
         </button>

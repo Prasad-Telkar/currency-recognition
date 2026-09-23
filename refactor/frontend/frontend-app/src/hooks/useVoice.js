@@ -10,22 +10,37 @@ export function useVoice() {
 
   const speak = useCallback((text, lang = "en-US") => {
     if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.onend = () => {
+      setTimeout(() => {
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = lang;
+          utterance.onend = () => {
+            setSpeaking(false);
+            setPaused(false);
+          };
+          utterance.onerror = (e) => {
+            console.warn("Speech synthesis notice:", e?.error || e);
+            setSpeaking(false);
+            setPaused(false);
+          };
+
+          setSpeaking(true);
+          setPaused(false);
+          window.speechSynthesis.speak(utterance);
+        } catch (innerErr) {
+          console.warn("SpeechSynthesis speak error:", innerErr);
+          setSpeaking(false);
+          setPaused(false);
+        }
+      }, 50);
+    } catch (err) {
+      console.warn("Speech synthesis failed to start:", err);
       setSpeaking(false);
       setPaused(false);
-    };
-    utterance.onerror = () => {
-      setSpeaking(false);
-      setPaused(false);
-    };
-
-    setSpeaking(true);
-    setPaused(false);
-    window.speechSynthesis.speak(utterance);
+    }
   }, []);
 
   const stop = useCallback(() => {

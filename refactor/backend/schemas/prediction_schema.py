@@ -16,11 +16,11 @@ def confidence_level(confidence):
     return "Low"
 
 
-def build_prediction_response(prediction, image_analysis, processing_time_ms, model_version="v1.0-mock"):
+def build_prediction_response(prediction, image_analysis, processing_time_ms, model_version="v1.0-mock", counterfeit_analysis=None):
     level = confidence_level(prediction["confidence"])
     legacy_label = f"{prediction.get('country', 'unknown')}_{prediction.get('denomination', '0')}"
 
-    return {
+    response = {
         "success": True,
         "prediction": {**prediction, "confidence_level": level},
         "image_analysis": image_analysis,
@@ -35,6 +35,9 @@ def build_prediction_response(prediction, image_analysis, processing_time_ms, mo
             "confidence": prediction["confidence"],
         },
     }
+    if counterfeit_analysis is not None:
+        response["counterfeit_analysis"] = counterfeit_analysis
+    return response
 
 
 def build_error_response(code, message, details=None):

@@ -86,13 +86,16 @@ export async function predictCurrency(file) {
     denomination: pred.denomination,
     confidence: pred.confidence,
     confidenceLevel: pred.confidence_level,
+    purchasingPower: pred.purchasing_power || null,
+    history: pred.history || null,
     imageUrl: data.image_url,
     timestamp: data.timestamp,
     imageAnalysis: {
       quality_score: analysis.quality_score,
       blur_detected: analysis.blur_detected,
       lighting_quality: analysis.lighting_quality
-    }
+    },
+    counterfeitAnalysis: data.counterfeit_analysis || null
   };
 }
 
