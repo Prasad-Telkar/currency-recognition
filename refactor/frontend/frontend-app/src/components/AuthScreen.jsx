@@ -1,23 +1,56 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Coins, User, UserPlus, UploadCloud, BarChart3 } from "lucide-react";
+import { Coins, UserPlus, UploadCloud, BarChart3, AlertCircle } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function AuthScreen({ onAuth }) {
   const { t } = useTranslation();
+  const { loginWithGoogle, loginWithEmail, signupWithEmail, setGuestUser } = useAuth();
+  
   const [mode, setMode] = useState("login"); // login | signup
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const fullName = mode === "signup" ? `${firstName} ${lastName}`.trim() : email.split("@")[0];
-    onAuth({ name: fullName || "Guest", email });
+    setError(null);
+    setLoading(true);
+    
+    try {
+      if (mode === "signup") {
+        const fullName = `${firstName} ${lastName}`.trim();
+        await signupWithEmail(email, password, fullName);
+      } else {
+        await loginWithEmail(email, password);
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        setError("Invalid email or password.");
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError("An account with this email already exists.");
+      } else {
+        setError(err.message || "Failed to authenticate.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSocialClick = (platform) => {
-    onAuth({ name: `${platform} User`, email: `demo@${platform.toLowerCase()}.com` });
+  const handleSocialClick = async (platform) => {
+    try {
+      setError(null);
+      if (platform === 'Google') {
+        await loginWithGoogle();
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to sign in with Google.");
+    }
   };
 
   return (
@@ -65,6 +98,13 @@ export default function AuthScreen({ onAuth }) {
               : "Enter your personal data to create your account."}
           </p>
 
+          {error && (
+            <div className="auth-error">
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="auth-social">
             <button type="button" className="social-btn" onClick={() => handleSocialClick('Google')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,20 +146,23 @@ export default function AuthScreen({ onAuth }) {
               {mode === "signup" && <span className="field-hint">Must be at least 8 characters.</span>}
             </div>
             
-            <button type="submit" className="auth-submit-btn">
-              {mode === "login" ? "Log In" : "Sign Up"}
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? "Please wait..." : (mode === "login" ? "Log In" : "Sign Up")}
             </button>
           </form>
 
           <div className="auth-footer">
             {mode === "login" ? "Don't have an account?" : "Already have an account?"}
-            <button type="button" className="auth-switch-btn" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+            <button type="button" className="auth-switch-btn" onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setError(null);
+            }}>
               {mode === "login" ? "Sign up" : "Log in"}
             </button>
           </div>
 
           <div className="auth-guest-section">
-            <button type="button" className="guest-btn" onClick={() => onAuth({ name: "Guest", email: "" })}>
+            <button type="button" className="guest-btn" onClick={() => setGuestUser({ displayName: "Guest", email: "guest@currencyai.com" })}>
               Continue as Guest
             </button>
           </div>

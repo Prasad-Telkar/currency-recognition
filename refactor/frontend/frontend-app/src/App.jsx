@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import "./i18n";
 import "./App.css";
 
-import { useAuth } from "./hooks/useAuth";
+import { useAuth } from "./contexts/AuthContext";
 import { useVoice } from "./hooks/useVoice";
 import { useRecognition } from "./features/recognition/useRecognition";
 import { useConversion } from "./features/conversion/useConversion";

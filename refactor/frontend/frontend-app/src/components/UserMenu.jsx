@@ -36,9 +36,9 @@ export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, on
     setOpen(false);
   };
 
-  const userName = user.name || "Guest";
+  const userName = user?.displayName || user?.name || "Guest";
   const userInitial = userName.slice(0, 1).toUpperCase();
-  const userEmail = user.email || "guest@currencyai.com";
+  const userEmail = user?.email || "guest@currencyai.com";
 
   return (
     <div className="user-menu" ref={menuRef}>
