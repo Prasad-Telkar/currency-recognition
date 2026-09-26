@@ -29,7 +29,7 @@ class CurrencyPrediction(BaseModel):
     legal_tender_info: str = Field(default="", description="If is_legal_tender is false, explain when and why it was demonetized/withdrawn, and its current exchange value (if any).")
     currency_name: str = Field(description="The name of the currency (e.g. 'US Dollar', 'Indian Rupee', 'Euro')")
     currency_code: str = Field(description="The 3-letter ISO currency code (e.g. 'USD', 'INR', 'EUR')")
-    symbol: str = Field(description="The currency symbol (e.g. '$', 'Γé╣', 'Γé¼')")
+    symbol: str = Field(description="The currency symbol (e.g. '$', '₹', '€')")
     denomination: str = Field(description="The denomination value as a string (e.g. '500', '20'). Return '0' or empty if not sufficiently visible.")
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
@@ -101,7 +101,7 @@ def local_fallback_predict(pil_img):
             "is_currency": True,
             "currency_name": "Indian Rupee (Offline Fallback)",
             "currency_code": "INR",
-            "symbol": "Γé╣",
+            "symbol": "₹",
             "denomination": denomination,
             "confidence": float(confidence),
             "country": "India",
