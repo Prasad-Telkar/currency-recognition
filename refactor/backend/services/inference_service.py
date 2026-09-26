@@ -163,6 +163,7 @@ def predict_currency(image_input):
             "- provide a confidence estimate out of 100\n"
             "- if the note appears to be fake, counterfeit, or a novelty toy note (e.g. 'Children Bank of India'), set is_fake to true and provide the reason in fake_reason\n"
             "- determine if the note is still valid legal tender today. If it has been demonetized, withdrawn, banned (e.g., the old Indian 500/1000 notes from 2016, or pre-Euro currencies), or replaced, set is_legal_tender to false and detail the reasons, dates, and current value (if any) in legal_tender_info\n"
+            "- WARNING: For Brazilian notes, do NOT convert 'Cruzeiros' to 'Mil Reis' and do NOT multiply the printed denomination by 1000. If the note says '500', output '500'.\n"
             "- briefly explain the visual evidence used\n\n"
             "ECONOMIC & HISTORICAL INSIGHTS (for recognized currency):\n"
             "1. Purchasing Power Comparison ('20 years ago vs today'):\n"
@@ -184,7 +185,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         
         import time
         max_retries = 3
