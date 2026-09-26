@@ -14,13 +14,6 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-
-class PurchasingPower(BaseModel):
-    item_name: str = Field(description="Everyday item used for comparison (e.g. samosas, coffee)")
-    past_comparison: str = Field(description="What this bought ~20 years ago")
-    present_comparison: str = Field(description="What this buys today")
-    summary: str = Field(description="A short 1-2 sentence comparison summary")
-
 class CurrencyPrediction(BaseModel):
     is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
     is_fake: bool = Field(default=False, description="True if the currency appears to be counterfeit, a novelty, or a fake note.")
@@ -34,8 +27,13 @@ class CurrencyPrediction(BaseModel):
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
     explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
-    purchasing_power: PurchasingPower = Field(default=None, description="Purchasing power comparison (20 years ago vs today)")
     history: str = Field(default="", description="Brief historical background or notable design elements about this specific banknote / denomination")
+    
+    # Flattened Purchasing Power to avoid pydantic nested $defs validation errors on some environments
+    pp_item_name: str = Field(default="", description="Everyday item used for comparison (e.g. samosas, coffee)")
+    pp_past_comparison: str = Field(default="", description="What this bought ~20 years ago")
+    pp_present_comparison: str = Field(default="", description="What this buys today")
+    pp_summary: str = Field(default="", description="A short 1-2 sentence comparison summary")
 
 # Local Fallback Model Integration
 import numpy as np
@@ -168,10 +166,10 @@ def predict_currency(image_input):
             "- briefly explain the visual evidence used\n\n"
             "ECONOMIC & HISTORICAL INSIGHTS (for recognized currency):\n"
             "1. Purchasing Power Comparison ('20 years ago vs today'):\n"
-            "   - Choose a culturally well-known, locally relatable everyday item specifically for this country (e.g. samosas / cutting chai for India, brewed coffee / burgers for USA, artisan baguettes for France/Eurozone, street tacos for Mexico, ramen/onigiri for Japan).\n"
-            "   - State roughly how much of this item this denomination could buy ~20 years ago (around 2004-2006).\n"
-            "   - State roughly how much of this item it can buy today.\n"
-            "   - Provide a short, relatable 1-2 sentence comparison summary.\n"
+            "   - Set pp_item_name to a culturally well-known, locally relatable everyday item specifically for this country (e.g. samosas / cutting chai for India, brewed coffee / burgers for USA, artisan baguettes for France/Eurozone, street tacos for Mexico, ramen/onigiri for Japan).\n"
+            "   - Set pp_past_comparison to roughly how much of this item this denomination could buy ~20 years ago (around 2004-2006).\n"
+            "   - Set pp_present_comparison to roughly how much of this item it can buy today.\n"
+            "   - Set pp_summary to a short, relatable 1-2 sentence comparison summary.\n"
             "2. History (2-4 sentences):\n"
             "   - Provide a brief, interesting historical background or notable design elements about this specific banknote / denomination (e.g. year of introduction, monuments/portraits depicted, significance).\n\n"
             "If the image is completely unrelated to money (e.g. animals, cars, food, random objects):\n"
@@ -251,6 +249,14 @@ def predict_currency(image_input):
                     text_to_parse = "{}"
                     raise Exception("Response blocked or empty")
                 result_dict = json.loads(text_to_parse)
+            
+            if "pp_item_name" in result_dict:
+                result_dict["purchasing_power"] = {
+                    "item_name": result_dict.pop("pp_item_name", ""),
+                    "past_comparison": result_dict.pop("pp_past_comparison", ""),
+                    "present_comparison": result_dict.pop("pp_present_comparison", ""),
+                    "summary": result_dict.pop("pp_summary", "")
+                }
             
             return result_dict
             
