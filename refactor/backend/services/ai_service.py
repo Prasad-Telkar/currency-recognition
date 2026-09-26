@@ -54,7 +54,7 @@ def chat():
     
     try:
         interaction = client.interactions.create(
-            model='gemini-3.5-flash-lite',
+            model='gemini-2.5-flash',
             input=question,
             system_instruction=system_instruction,
         )
