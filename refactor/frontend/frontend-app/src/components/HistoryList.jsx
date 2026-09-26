@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { History as HistoryIcon, Search, Download, Trash2, X } from "lucide-react";
 import { CURRENCIES } from "../data/currencies";
 
-export default function HistoryList({ history }) {
+export default function HistoryList({ history, onOpenInfo }) {
   const { t } = useTranslation();
   const { entries, rawCount, query, setQuery, sortBy, setSortBy, removeEntry, clearHistory, exportCsv } = history;
 
@@ -61,14 +61,28 @@ export default function HistoryList({ history }) {
           {entries.map((item) => {
             const currency = CURRENCIES[item.country];
             return (
-              <div className="history-card" key={item.id}>
+              <div 
+                className="history-card" 
+                key={item.id} 
+                onClick={() => onOpenInfo && onOpenInfo(item)}
+                style={{ cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(0,0,0,0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+              >
                 <div className="history-icon">{currency?.symbol || "?"}</div>
                 <div className="history-info">
                   <strong>{currency?.symbol}{item.denomination} {item.country}</strong>
                   <span>{item.date} · {item.time}</span>
                 </div>
                 <div className="history-confidence">{item.confidence}%</div>
-                <button className="history-remove" onClick={() => removeEntry(item.id)} aria-label="Remove entry">
+                <button 
+                  className="history-remove" 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent opening the info page when deleting
+                    removeEntry(item.id);
+                  }} 
+                  aria-label="Remove entry"
+                >
                   <X size={14} />
                 </button>
               </div>

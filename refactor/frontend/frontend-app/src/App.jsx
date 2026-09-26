@@ -144,7 +144,15 @@ export default function App() {
             {activeTab === "about" && <AboutCurrencyAI />}
             {activeTab === "converter" && <ManualConverter conversion={conversion} />}
             {activeTab === "currencies" && <CurrencyGrid />}
-            {activeTab === "history" && <HistoryList history={history} />}
+            {activeTab === "history" && (
+              <HistoryList 
+                history={history} 
+                onOpenInfo={(item) => {
+                  setInfoPageData({ result: item, imageUrl: item.imageUrl });
+                  handleTabChange("currency-info");
+                }} 
+              />
+            )}
             {activeTab === "news" && <NewsSection />}
             {activeTab === "currency-guide" && <CurrencyGuide setActiveTab={handleTabChange} />}
             {activeTab === "api-docs" && <ApiDocs setActiveTab={handleTabChange} />}
