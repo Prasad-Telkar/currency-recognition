@@ -36,6 +36,7 @@ import Feedback from "./components/Feedback";
 import MobileHeader from "./components/MobileHeader";
 import VoiceAssistanceInfo from "./components/VoiceAssistanceInfo";
 import CameraRecognitionInfo from "./components/CameraRecognitionInfo";
+import CurrencyInfoPage from "./components/CurrencyInfoPage";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -44,6 +45,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [darkMode, setDarkMode] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [infoPageData, setInfoPageData] = useState(null);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -128,6 +130,10 @@ export default function App() {
                   conversion={conversion}
                   onOpenFullConverter={handleOpenFullConverter}
                   onOpenNews={() => handleTabChange("news")}
+                  onOpenInfo={(result) => {
+                    setInfoPageData({ result, imageUrl: recognition.preview });
+                    handleTabChange("currency-info");
+                  }}
                 />
 
                 <FeaturesSection setActiveTab={handleTabChange} />
@@ -150,6 +156,12 @@ export default function App() {
             {activeTab === "feedback" && <Feedback setActiveTab={handleTabChange} />}
             {activeTab === "voice" && <VoiceAssistanceInfo setActiveTab={handleTabChange} />}
             {activeTab === "camera" && <CameraRecognitionInfo setActiveTab={handleTabChange} />}
+            {activeTab === "currency-info" && (
+              <CurrencyInfoPage 
+                data={infoPageData} 
+                onBack={() => handleTabChange("home")} 
+              />
+            )}
             <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
           </main>
 

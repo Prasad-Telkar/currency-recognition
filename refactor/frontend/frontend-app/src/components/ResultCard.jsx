@@ -3,7 +3,7 @@ import { Volume2, VolumeX, Newspaper, Info, Globe as GlobeIcon, ShoppingBag, Lan
 import ConfidenceGuidance from "./ConfidenceGuidance";
 import ConverterCard from "./ConverterCard";
 
-export default function ResultCard({ result, voice, lang, conversion, onOpenFullConverter, onOpenNews }) {
+export default function ResultCard({ result, voice, lang, conversion, onOpenFullConverter, onOpenNews, onOpenInfo }) {
   const { t } = useTranslation();
   if (!result) return null;
 
@@ -145,9 +145,7 @@ export default function ResultCard({ result, voice, lang, conversion, onOpenFull
         </button>
 
         <button
-          onClick={() =>
-            alert(`${currencyName}\n\nCurrency code: ${currencyCode}\nCountry: ${country}\nDenomination: ${denomination}`)
-          }
+          onClick={() => onOpenInfo(result)}
         >
           <Info size={16} />
           {t("result.info")}
@@ -193,20 +191,7 @@ export default function ResultCard({ result, voice, lang, conversion, onOpenFull
         </div>
       )}
 
-      {history && (
-        <div className="glass-panel" style={{ marginTop: '20px', padding: '20px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-            <div style={{ background: 'rgba(10, 132, 255, 0.2)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}>
-              <Landmark size={16} />
-            </div>
-            <span style={{ background: '#0984e3', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', letterSpacing: '1px', fontWeight: 'bold' }}>BANKNOTE BACKGROUND</span>
-          </div>
-          <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: '600' }}>Currency &amp; Denomination History</h3>
-          <p style={{ fontSize: '13px', lineHeight: '1.7', color: 'var(--muted)' }}>
-            {history}
-          </p>
-        </div>
-      )}
+
     </section>
   );
 }
