@@ -185,7 +185,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
         
         import time
         max_retries = 3
