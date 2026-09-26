@@ -36,7 +36,8 @@ def create_app():
     app.register_blueprint(history_bp, name="history_api", url_prefix="/api")
     app.register_blueprint(news_bp, name="news_api", url_prefix="/api")
     app.register_blueprint(ai_bp, name="ai_api", url_prefix="/api/ai")
-    app.register_blueprint(counterfeit_bp, name="counterfeit_api", url_prefix="/api/counterfeit")
+    from api.routes.rates import rates_bp
+    app.register_blueprint(rates_bp, name="rates_api", url_prefix="/api/rates")
 
     @app.route("/health")
     @app.route("/api/health")
@@ -56,7 +57,12 @@ def create_app():
 
     return app
 
+from services.inference_service import load_fallback_model
+import threading
+
 app = create_app()
 
 if __name__ == "__main__":
+    # Pre-load the heavy offline fallback model in the background so it doesn't timeout the first request
+    threading.Thread(target=load_fallback_model, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, debug=Config.DEBUG)

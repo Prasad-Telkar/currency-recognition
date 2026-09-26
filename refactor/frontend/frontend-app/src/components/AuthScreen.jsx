@@ -17,7 +17,7 @@ export default function AuthScreen({ onAuth }) {
   };
 
   const handleSocialClick = (platform) => {
-    alert(`${platform} login coming soon.`);
+    onAuth({ name: `${platform} User`, email: `demo@${platform.toLowerCase()}.com` });
   };
 
   return (

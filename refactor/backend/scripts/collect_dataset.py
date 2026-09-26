@@ -10,7 +10,20 @@ CURRENCIES = {
     "INR": "Indian Rupee banknote",
     "EUR": "Euro banknote",
     "GBP": "British Pound banknote",
-    "JPY": "Japanese Yen banknote"
+    "JPY": "Japanese Yen banknote",
+    "CAD": "Canadian Dollar banknote",
+    "AUD": "Australian Dollar banknote",
+    "CHF": "Swiss Franc banknote",
+    "CNY": "Chinese Yuan banknote",
+    "SGD": "Singapore Dollar banknote",
+    "AED": "UAE Dirham banknote",
+    "NPR": "Nepalese Rupee banknote",
+    "IDR": "Indonesian Rupiah banknote",
+    "BRL": "Brazilian Real banknote",
+    "THB": "Thai Baht banknote",
+    "PKR": "Pakistani Rupee banknote",
+    "BDT": "Bangladeshi Taka banknote",
+    "PEN": "Peruvian Sol banknote"
 }
 
 def main():
@@ -21,10 +34,14 @@ def main():
     
     for iso, query in CURRENCIES.items():
         print(f"\n--- Downloading images for {iso} ({query}) ---")
-        # Bing image downloader automatically creates the query folder inside output_dir
-        # We will rename it to the ISO code
+        target_folder = os.path.join(DATASET_DIR, iso)
         
-        downloader.download(
+        # Skip if already downloaded
+        if os.path.exists(target_folder) and len(os.listdir(target_folder)) >= LIMIT_PER_CLASS * 0.8:
+            print(f"Skipping {iso}, already has enough images.")
+            continue
+            
+        downloader.download( 
             query,
             limit=LIMIT_PER_CLASS,
             output_dir=DATASET_DIR,
@@ -50,6 +67,20 @@ def main():
                 shutil.rmtree(downloaded_folder)
             else:
                 os.rename(downloaded_folder, target_folder)
+                
+            # Verify images in target_folder to prevent TensorFlow crashes
+            from PIL import Image
+            for filename in os.listdir(target_folder):
+                filepath = os.path.join(target_folder, filename)
+                try:
+                    with Image.open(filepath) as img:
+                        img.verify()
+                        # Also check if it can actually be loaded (catches truncated files)
+                    with Image.open(filepath) as img:
+                        img.load()
+                except Exception as e:
+                    print(f"Removing corrupted image: {filepath}")
+                    os.remove(filepath)
                 
     print("\nDataset collection complete!")
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import "./i18n";
 import "./App.css";
@@ -34,6 +34,8 @@ import SolutionsEducation from "./components/SolutionsEducation";
 import RecognitionGuide from "./components/RecognitionGuide";
 import Feedback from "./components/Feedback";
 import MobileHeader from "./components/MobileHeader";
+import VoiceAssistanceInfo from "./components/VoiceAssistanceInfo";
+import CameraRecognitionInfo from "./components/CameraRecognitionInfo";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -42,6 +44,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [darkMode, setDarkMode] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 10);
+  };
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -58,7 +69,7 @@ export default function App() {
     if (to) conversion.setTargetCurrency(to);
     if (amt) conversion.setAmount(amt);
     conversion.runConversion(amt, from, to);
-    setActiveTab("converter");
+    handleTabChange("converter");
   };
 
   if (!user) {
@@ -82,13 +93,13 @@ export default function App() {
           user={user}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           onLogout={logout}
         />
 
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
           user={user}
@@ -116,10 +127,10 @@ export default function App() {
                   lang={voiceLang}
                   conversion={conversion}
                   onOpenFullConverter={handleOpenFullConverter}
-                  onOpenNews={() => setActiveTab("news")}
+                  onOpenNews={() => handleTabChange("news")}
                 />
 
-                <FeaturesSection />
+                <FeaturesSection setActiveTab={handleTabChange} />
               </>
             )}
 
@@ -129,18 +140,20 @@ export default function App() {
             {activeTab === "currencies" && <CurrencyGrid />}
             {activeTab === "history" && <HistoryList history={history} />}
             {activeTab === "news" && <NewsSection />}
-            {activeTab === "currency-guide" && <CurrencyGuide setActiveTab={setActiveTab} />}
-            {activeTab === "api-docs" && <ApiDocs setActiveTab={setActiveTab} />}
-            {activeTab === "help" && <HelpCenter setActiveTab={setActiveTab} />}
-            {activeTab === "solutions-travelers" && <SolutionsTravelers setActiveTab={setActiveTab} />}
-            {activeTab === "solutions-business" && <SolutionsBusiness setActiveTab={setActiveTab} />}
-            {activeTab === "solutions-education" && <SolutionsEducation setActiveTab={setActiveTab} />}
-            {activeTab === "recognition-guide" && <RecognitionGuide setActiveTab={setActiveTab} />}
-            {activeTab === "feedback" && <Feedback setActiveTab={setActiveTab} />}
+            {activeTab === "currency-guide" && <CurrencyGuide setActiveTab={handleTabChange} />}
+            {activeTab === "api-docs" && <ApiDocs setActiveTab={handleTabChange} />}
+            {activeTab === "help" && <HelpCenter setActiveTab={handleTabChange} />}
+            {activeTab === "solutions-travelers" && <SolutionsTravelers setActiveTab={handleTabChange} />}
+            {activeTab === "solutions-business" && <SolutionsBusiness setActiveTab={handleTabChange} />}
+            {activeTab === "solutions-education" && <SolutionsEducation setActiveTab={handleTabChange} />}
+            {activeTab === "recognition-guide" && <RecognitionGuide setActiveTab={handleTabChange} />}
+            {activeTab === "feedback" && <Feedback setActiveTab={handleTabChange} />}
+            {activeTab === "voice" && <VoiceAssistanceInfo setActiveTab={handleTabChange} />}
+            {activeTab === "camera" && <CameraRecognitionInfo setActiveTab={handleTabChange} />}
             <AIAssistant context={recognition.result ? `The user just scanned a ${recognition.result.denomination} ${recognition.result.currencyCode} (${recognition.result.currencyName}) note.` : null} />
           </main>
 
-          <Footer setActiveTab={setActiveTab} />
+          <Footer setActiveTab={handleTabChange} />
         </div>
       </div>
     </div>

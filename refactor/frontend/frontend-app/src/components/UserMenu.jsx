@@ -89,12 +89,12 @@ export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, on
           <div className="user-dropdown-divider" />
 
           <div className="theme-toggle-segmented">
-             <button className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>
-               <Sun size={15} /> Light
-             </button>
-             <button className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>
-               <Moon size={15} /> Dark
-             </button>
+            <button className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>
+              <Sun size={15} /> Light
+            </button>
+            <button className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>
+              <Moon size={15} /> Dark
+            </button>
           </div>
 
           <div className="user-dropdown-divider" />
@@ -114,3 +114,4 @@ export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, on
     </div>
   );
 }
+

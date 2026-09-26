@@ -86,6 +86,14 @@ export async function predictCurrency(file) {
     denomination: pred.denomination,
     confidence: pred.confidence,
     confidenceLevel: pred.confidence_level,
+    purchasingPower: pred.purchasing_power,
+    history: pred.history,
+    isCurrency: pred.is_currency,
+    explanation: pred.explanation,
+    isFake: pred.is_fake,
+    fakeReason: pred.fake_reason,
+    isLegalTender: pred.is_legal_tender !== undefined ? pred.is_legal_tender : true,
+    legalTenderInfo: pred.legal_tender_info,
     imageUrl: data.image_url,
     timestamp: data.timestamp,
     imageAnalysis: {
@@ -197,15 +205,7 @@ export async function fetchHistory(query = "", sortBy = "newest") {
         historyArray = data.history;
       }
       
-      return historyArray.map(item => ({
-        id: item.id,
-        timestamp: item.timestamp,
-        result: item.result,
-        currencyName: item.currency_name,
-        currencyCode: item.currency_code,
-        confidence: item.confidence,
-        confidenceLevel: item.confidence_level
-      }));
+      return historyArray;
     }
     return [];
   } catch (error) {

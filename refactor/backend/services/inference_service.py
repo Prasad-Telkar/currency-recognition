@@ -15,8 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 
+class PurchasingPower(BaseModel):
+    item_name: str = Field(description="Everyday item used for comparison (e.g. samosas, coffee)")
+    past_comparison: str = Field(description="What this bought ~20 years ago")
+    present_comparison: str = Field(description="What this buys today")
+    summary: str = Field(description="A short 1-2 sentence comparison summary")
+
 class CurrencyPrediction(BaseModel):
     is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
+    is_fake: bool = Field(default=False, description="True if the currency appears to be counterfeit, a novelty, or a fake note.")
+    fake_reason: str = Field(default="", description="If is_fake is true, explain why the note appears to be fake or a novelty.")
+    is_legal_tender: bool = Field(default=True, description="True if the note is currently valid legal tender. False if it has been banned, withdrawn, demonetized, or replaced.")
+    legal_tender_info: str = Field(default="", description="If is_legal_tender is false, explain when and why it was demonetized/withdrawn, and its current exchange value (if any).")
     currency_name: str = Field(description="The name of the currency (e.g. 'US Dollar', 'Indian Rupee', 'Euro')")
     currency_code: str = Field(description="The 3-letter ISO currency code (e.g. 'USD', 'INR', 'EUR')")
     symbol: str = Field(description="The currency symbol (e.g. '$', '₹', '€')")
@@ -24,6 +34,8 @@ class CurrencyPrediction(BaseModel):
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
     explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
+    purchasing_power: PurchasingPower = Field(default=None, description="Purchasing power comparison (20 years ago vs today)")
+    history: str = Field(default="", description="Brief historical background or notable design elements about this specific banknote / denomination")
 
 # Local Fallback Model Integration
 import numpy as np
@@ -70,14 +82,26 @@ def local_fallback_predict(pil_img):
         
         predicted_class = _class_names[np.argmax(score)]
         
+        denomination_map = {
+            "1Hundrednote": "100",
+            "2Hundrednote": "200",
+            "2Thousandnote": "2000",
+            "5Hundrednote": "500",
+            "Fiftynote": "50",
+            "Tennote": "10",
+            "Twentynote": "20"
+        }
+        
+        denomination = denomination_map.get(predicted_class, "Unknown")
+        
         return {
             "is_currency": True,
-            "currency_name": f"{predicted_class} (Offline Fallback)",
-            "currency_code": predicted_class,
-            "symbol": "",
-            "denomination": "Unknown",
+            "currency_name": "Indian Rupee (Offline Fallback)",
+            "currency_code": "INR",
+            "symbol": "₹",
+            "denomination": denomination,
             "confidence": float(confidence),
-            "country": "Unknown",
+            "country": "India",
             "explanation": "Predicted using offline fallback model due to Gemini API failure."
         }
     except Exception as e:
@@ -99,7 +123,9 @@ def predict_currency(image_input):
         raise Exception(f"Failed to initialize AI client: {e}")
     
     pil_img = None
-    if isinstance(image_input, (bytes, bytearray)):
+    if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
+        pil_img = image_input
+    elif isinstance(image_input, (bytes, bytearray)):
         try:
             from PIL import Image
             pil_img = Image.open(BytesIO(image_input))
@@ -122,23 +148,35 @@ def predict_currency(image_input):
         print("Using Gemini API for currency prediction...")
         
         prompt = (
-            "You are the currency recognition engine for CurrencyAI.\n"
+            "You are the currency recognition and economic analysis engine for CurrencyAI.\n"
             "Analyze the provided image carefully.\n"
-            "Determine whether the image contains a recognizable banknote or coin.\n\n"
-            "If it is a currency:\n"
+            "Determine whether the image contains a banknote, paper bill (genuine, suspect, or counterfeit being checked), or coin.\n"
+            "CRITICAL: Even if the note is heavily damaged, torn, taped together, faded, or in extremely poor condition, you MUST still identify it and treat it as a valid currency.\n\n"
+            "If it is a banknote or coin (regardless of condition):\n"
+            "- set is_currency to true\n"
             "- identify the country/region\n"
-            "- identify the currency\n"
+            "- identify the currency name\n"
             "- identify the ISO currency code\n"
-            "- identify the denomination when visible\n"
+            "- identify the denomination value when visible\n"
             "- provide the currency symbol when applicable\n"
-            "- provide a confidence estimate\n"
+            "- provide a confidence estimate out of 100\n"
+            "- if the note appears to be fake, counterfeit, or a novelty toy note (e.g. 'Children Bank of India'), set is_fake to true and provide the reason in fake_reason\n"
+            "- determine if the note is still valid legal tender today. If it has been demonetized, withdrawn, banned (e.g., the old Indian 500/1000 notes from 2016, or pre-Euro currencies), or replaced, set is_legal_tender to false and detail the reasons, dates, and current value (if any) in legal_tender_info\n"
             "- briefly explain the visual evidence used\n\n"
-            "If the image is not a currency or the currency cannot be reliably identified:\n"
+            "ECONOMIC & HISTORICAL INSIGHTS (for recognized currency):\n"
+            "1. Purchasing Power Comparison ('20 years ago vs today'):\n"
+            "   - Choose a culturally well-known, locally relatable everyday item specifically for this country (e.g. samosas / cutting chai for India, brewed coffee / burgers for USA, artisan baguettes for France/Eurozone, street tacos for Mexico, ramen/onigiri for Japan).\n"
+            "   - State roughly how much of this item this denomination could buy ~20 years ago (around 2004-2006).\n"
+            "   - State roughly how much of this item it can buy today.\n"
+            "   - Provide a short, relatable 1-2 sentence comparison summary.\n"
+            "2. History (2-4 sentences):\n"
+            "   - Provide a brief, interesting historical background or notable design elements about this specific banknote / denomination (e.g. year of introduction, monuments/portraits depicted, significance).\n\n"
+            "If the image is completely unrelated to money (e.g. animals, cars, food, random objects):\n"
             "- set is_currency to false\n"
             "- do not invent a currency or denomination\n"
             "- explain why recognition was unsuccessful\n\n"
             "Never guess a denomination when it is not sufficiently visible.\n"
-            "Return ONLY the required structured response."
+            "Return ONLY the required structured response matching the schema."
         )
         
         model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
@@ -172,22 +210,27 @@ def predict_currency(image_input):
                         retry_delay *= 2
                     else:
                         logger.error("Gemini API is unreachable. Falling back to local model.")
-                        fallback_result = local_fallback_predict(pil_img)
-                        if fallback_result:
-                            return fallback_result
-                        raise Exception("The AI service is currently experiencing high demand. Local fallback model is not trained yet. Please try again later.")
+                        break
                 else:
                     logger.error(f"Gemini API Error: {error_msg}. Falling back to local model.")
-                    fallback_result = local_fallback_predict(pil_img)
-                    if fallback_result:
-                        return fallback_result
-                    raise e
+                    break
                     
         if not response:
-            raise Exception("Failed to get a response from Gemini.")
+            logger.error(f"Failed to get a response from Gemini. Last error: {last_error}")
+            fallback_result = local_fallback_predict(pil_img)
+            if fallback_result:
+                return fallback_result
+            if last_error:
+                raise last_error
+            raise Exception("Failed to get a response from Gemini, and fallback model is unavailable.")
         
         try:
-            print("Gemini Inference response raw text:", response.text.encode('utf-8', 'ignore').decode('utf-8'))
+            raw_text = "<not available>"
+            try:
+                raw_text = response.text.encode('utf-8', 'ignore').decode('utf-8')
+                print("Gemini Inference response raw text:", raw_text)
+            except Exception as e:
+                print("Could not access response.text (possibly blocked):", e)
         except:
             pass
         
@@ -198,15 +241,50 @@ def predict_currency(image_input):
                 else:
                     result_dict = response.parsed
             else:
-                result_dict = json.loads(response.text)
+                try:
+                    text_to_parse = response.text
+                except Exception:
+                    # If response.text raises an exception, the response was likely blocked
+                    text_to_parse = "{}"
+                    raise Exception("Response blocked or empty")
+                result_dict = json.loads(text_to_parse)
             
             return result_dict
             
         except Exception as parse_e:
             print("Failed to parse Gemini response:", parse_e)
-            print("Raw response text:", response.text)
-            raise Exception("Failed to parse recognition results.")
+            
+            if str(parse_e) == "Response blocked or empty":
+                # Do not fallback to local model if it's a safety block (likely a counterfeit note).
+                # Just return the safety block payload.
+                pass
+            else:
+                logger.error("Falling back to local model due to parsing failure.")
+                fallback_result = local_fallback_predict(pil_img)
+                if fallback_result:
+                    return fallback_result
+            
+            # If fallback fails or isn't available, or if it was a safety block, return default FAKE response
+            return {
+                "is_currency": True,
+                "is_fake": True,
+                "fake_reason": "The image could not be processed completely due to safety filters or parsing errors, which often happens with counterfeit or prohibited content.",
+                "currency_name": "Unknown / Suspicious",
+                "currency_code": "N/A",
+                "symbol": "?",
+                "denomination": "0",
+                "confidence": 0,
+                "country": "Unknown",
+                "explanation": "Safety block or processing failure."
+            }
             
     except Exception as e:
-        logger.error("Gemini API inference failed: %s", str(e).encode('utf-8', 'ignore').decode('utf-8'))
+        logger.error("Gemini API inference process failed: %s", str(e).encode('utf-8', 'ignore').decode('utf-8'))
+        
+        # Absolute final safety net: if anything goes wrong in the try block, fallback
+        logger.error("Falling back to local model due to unhandled exception.")
+        fallback_result = local_fallback_predict(pil_img)
+        if fallback_result:
+            return fallback_result
+            
         raise Exception(f"Recognition failed: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
