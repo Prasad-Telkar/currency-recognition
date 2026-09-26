@@ -27,7 +27,7 @@ class CurrencyPrediction(BaseModel):
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
     explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
-    history: str = Field(default="", description="Brief historical background or notable design elements about this specific banknote / denomination")
+    history: str = Field(default="", description="Detailed, 2-3 paragraph historical background and design analysis of this specific banknote")
     
     # Flattened Purchasing Power to avoid pydantic nested $defs validation errors on some environments
     pp_item_name: str = Field(default="", description="Everyday item used for comparison (e.g. samosas, coffee)")
@@ -158,7 +158,7 @@ def predict_currency(image_input):
             "- identify the country/region\n"
             "- identify the currency name\n"
             "- identify the ISO currency code\n"
-            "- identify the denomination value when visible\n"
+            "- identify the EXACT denomination value printed on the note (do not add extra zeros or hallucinate large numbers)\n"
             "- provide the currency symbol when applicable\n"
             "- provide a confidence estimate out of 100\n"
             "- if the note appears to be fake, counterfeit, or a novelty toy note (e.g. 'Children Bank of India'), set is_fake to true and provide the reason in fake_reason\n"
@@ -177,8 +177,10 @@ def predict_currency(image_input):
             "If the image is completely unrelated to money (e.g. animals, cars, food, random objects):\n"
             "- set is_currency to false\n"
             "- do not invent a currency or denomination\n"
-            "- explain why recognition was unsuccessful\n\n"
+            "- explain why recognition was unsuccessful\n"
+            "- return empty strings for history and pp_ fields\n\n"
             "Never guess a denomination when it is not sufficiently visible.\n"
+            "You MUST populate all history and pp_ fields when a currency is identified.\n"
             "Return ONLY the required structured response matching the schema."
         )
         
