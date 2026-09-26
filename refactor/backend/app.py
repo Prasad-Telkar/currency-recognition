@@ -57,12 +57,7 @@ def create_app():
 
     return app
 
-from services.inference_service import load_fallback_model
-import threading
-
 app = create_app()
 
 if __name__ == "__main__":
-    # Pre-load the heavy offline fallback model in the background so it doesn't timeout the first request
-    threading.Thread(target=load_fallback_model, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, debug=Config.DEBUG)
