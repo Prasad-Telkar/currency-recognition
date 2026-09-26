@@ -67,10 +67,7 @@ export default function UserMenu({ user, darkMode, setDarkMode, setActiveTab, on
 
           <button
             className="user-dropdown-item"
-            onClick={() => {
-              alert("Account settings — coming soon.");
-              setOpen(false);
-            }}
+            onClick={() => go("account-settings")}
           >
             <Settings size={17} />
             {t("nav.accountSettings", "Settings")}

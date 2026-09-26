@@ -37,6 +37,7 @@ import MobileHeader from "./components/MobileHeader";
 import VoiceAssistanceInfo from "./components/VoiceAssistanceInfo";
 import CameraRecognitionInfo from "./components/CameraRecognitionInfo";
 import CurrencyInfoPage from "./components/CurrencyInfoPage";
+import AccountSettings from "./components/AccountSettings";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -164,6 +165,7 @@ export default function App() {
             {activeTab === "feedback" && <Feedback setActiveTab={handleTabChange} />}
             {activeTab === "voice" && <VoiceAssistanceInfo setActiveTab={handleTabChange} />}
             {activeTab === "camera" && <CameraRecognitionInfo setActiveTab={handleTabChange} />}
+            {activeTab === "account-settings" && <AccountSettings />}
             {activeTab === "currency-info" && (
               <CurrencyInfoPage 
                 data={infoPageData} 
