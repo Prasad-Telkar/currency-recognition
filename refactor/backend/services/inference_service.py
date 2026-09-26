@@ -23,7 +23,7 @@ class CurrencyPrediction(BaseModel):
     currency_name: str = Field(description="The name of the currency (e.g. 'US Dollar', 'Indian Rupee', 'Euro')")
     currency_code: str = Field(description="The 3-letter ISO currency code (e.g. 'USD', 'INR', 'EUR')")
     symbol: str = Field(description="The currency symbol (e.g. '$', '₹', '€')")
-    denomination: str = Field(description="The denomination value as a string (e.g. '500', '20'). Return '0' or empty if not sufficiently visible.")
+    denomination: str = Field(description="The EXACT denomination value printed as a string (e.g. '500', '20'). DO NOT add extra zeros or convert currencies (e.g. if it says 500, return '500', not '500000').")
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
     explanation: str = Field(description="Briefly explain the visual evidence used, or why recognition was unsuccessful.")
