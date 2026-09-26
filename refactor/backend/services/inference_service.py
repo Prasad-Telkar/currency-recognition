@@ -185,44 +185,50 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        fallback_model = "gemini-1.5-flash"
+        models_to_try = [primary_model, fallback_model]
         
         import time
-        max_retries = 3
-        retry_delay = 2
+        max_retries_per_model = 2
         
         response = None
         last_error = None
         
-        for attempt in range(max_retries):
-            try:
-                response = gemini_client.models.generate_content(
-                    model=model_name,
-                    contents=[pil_img, prompt],
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=CurrencyPrediction,
-                        temperature=0.1
-                    ),
-                )
-                break
-            except Exception as e:
-                last_error = e
-                error_msg = str(e).upper()
-                if "503" in error_msg or "429" in error_msg or "UNAVAILABLE" in error_msg or "QUOTA" in error_msg:
-                    if attempt < max_retries - 1:
-                        logger.warning(f"Gemini API busy (Attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2
+        for current_model in models_to_try:
+            retry_delay = 2
+            for attempt in range(max_retries_per_model):
+                try:
+                    response = gemini_client.models.generate_content(
+                        model=current_model,
+                        contents=[pil_img, prompt],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=CurrencyPrediction,
+                            temperature=0.1
+                        ),
+                    )
+                    break # Success, break out of attempt loop
+                except Exception as e:
+                    last_error = e
+                    error_msg = str(e).upper()
+                    if "503" in error_msg or "429" in error_msg or "UNAVAILABLE" in error_msg or "QUOTA" in error_msg:
+                        if attempt < max_retries_per_model - 1:
+                            logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            retry_delay *= 2
+                        else:
+                            logger.error(f"{current_model} is overloaded. Trying next model...")
+                            break # Break attempt loop, move to next model
                     else:
-                        logger.error("Gemini API is unreachable. Falling back to local model.")
-                        break
-                else:
-                    logger.error(f"Gemini API Error: {error_msg}. Falling back to local model.")
-                    break
+                        logger.error(f"Gemini API Error with {current_model}: {error_msg}")
+                        break # Break attempt loop, move to next model
+            
+            if response:
+                break # Success, break out of model loop
                     
         if not response:
-            logger.error(f"Failed to get a response from Gemini. Last error: {last_error}")
+            logger.error(f"Failed to get a response from Gemini models. Last error: {last_error}")
             fallback_result = local_fallback_predict(pil_img)
             if fallback_result:
                 return fallback_result
