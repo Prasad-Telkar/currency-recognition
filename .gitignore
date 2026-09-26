@@ -41,3 +41,10 @@ yarn-error.log*
 # Application specific
 refactor/backend/uploads/
 uploads/
+
+# Datasets and Large Models
+refactor/backend/dataset/
+refactor/backend/model/
+refactor/backend/models/
+*.keras
+*.db
