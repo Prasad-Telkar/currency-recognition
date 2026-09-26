@@ -29,7 +29,7 @@ class CurrencyPrediction(BaseModel):
     legal_tender_info: str = Field(default="", description="If is_legal_tender is false, explain when and why it was demonetized/withdrawn, and its current exchange value (if any).")
     currency_name: str = Field(description="The name of the currency (e.g. 'US Dollar', 'Indian Rupee', 'Euro')")
     currency_code: str = Field(description="The 3-letter ISO currency code (e.g. 'USD', 'INR', 'EUR')")
-    symbol: str = Field(description="The currency symbol (e.g. '$', '₹', '€')")
+    symbol: str = Field(description="The currency symbol (e.g. '$', 'Γé╣', 'Γé¼')")
     denomination: str = Field(description="The denomination value as a string (e.g. '500', '20'). Return '0' or empty if not sufficiently visible.")
     confidence: float = Field(description="The confidence score out of 100")
     country: str = Field(description="The country or region of the currency (e.g. 'USA', 'India', 'Euro')")
@@ -37,9 +37,79 @@ class CurrencyPrediction(BaseModel):
     purchasing_power: PurchasingPower = Field(default=None, description="Purchasing power comparison (20 years ago vs today)")
     history: str = Field(default="", description="Brief historical background or notable design elements about this specific banknote / denomination")
 
-# Local Fallback Model Integration (Removed to save memory)
+# Local Fallback Model Integration
+import numpy as np
+
+_fallback_model = None
+_class_names = []
+
+def load_fallback_model():
+    global _fallback_model, _class_names
+    if _fallback_model is not None:
+        return True
+        
+    model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'fallback_model.keras')
+    class_names_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'class_names.json')
+    
+    if not os.path.exists(model_path) or not os.path.exists(class_names_path):
+        return False
+        
+    try:
+        import tensorflow as tf # type: ignore
+        _fallback_model = tf.keras.models.load_model(model_path)
+        with open(class_names_path, 'r') as f:
+            _class_names = json.load(f)
+        logger.info("Successfully loaded offline fallback model.")
+        return True
+    except ImportError:
+        logger.warning("TensorFlow is not installed. Offline fallback model is disabled (expected on Render).")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to load fallback model: {e}")
+        return False
+
 def local_fallback_predict(pil_img):
-    return None
+    if not load_fallback_model():
+        return None
+        
+    try:
+        import tensorflow as tf # type: ignore
+        # Resize image to match model input
+        img_resized = pil_img.resize((224, 224))
+        img_array = tf.keras.preprocessing.image.img_to_array(img_resized)
+        img_array = tf.expand_dims(img_array, 0)
+        
+        predictions = _fallback_model.predict(img_array)
+        score = tf.nn.softmax(predictions[0])
+        confidence = 100 * np.max(score)
+        
+        predicted_class = _class_names[np.argmax(score)]
+        
+        denomination_map = {
+            "1Hundrednote": "100",
+            "2Hundrednote": "200",
+            "2Thousandnote": "2000",
+            "5Hundrednote": "500",
+            "Fiftynote": "50",
+            "Tennote": "10",
+            "Twentynote": "20"
+        }
+        
+        denomination = denomination_map.get(predicted_class, "Unknown")
+        
+        return {
+            "is_currency": True,
+            "currency_name": "Indian Rupee (Offline Fallback)",
+            "currency_code": "INR",
+            "symbol": "Γé╣",
+            "denomination": denomination,
+            "confidence": float(confidence),
+            "country": "India",
+            "explanation": "Predicted using offline fallback model due to Gemini API failure."
+        }
+    except Exception as e:
+        logger.error(f"Fallback inference failed: {e}")
+        return None
 
 def predict_currency(image_input):
     """
@@ -150,9 +220,12 @@ def predict_currency(image_input):
                     
         if not response:
             logger.error(f"Failed to get a response from Gemini. Last error: {last_error}")
+            fallback_result = local_fallback_predict(pil_img)
+            if fallback_result:
+                return fallback_result
             if last_error:
                 raise last_error
-            raise Exception("Failed to get a response from Gemini.")
+            raise Exception("Failed to get a response from Gemini, and fallback model is unavailable.")
         
         try:
             raw_text = "<not available>"
@@ -189,7 +262,10 @@ def predict_currency(image_input):
                 # Just return the safety block payload.
                 pass
             else:
-                logger.error("Parsing failure. Unable to extract valid prediction.")
+                logger.error("Falling back to local model due to parsing failure.")
+                fallback_result = local_fallback_predict(pil_img)
+                if fallback_result:
+                    return fallback_result
             
             # If fallback fails or isn't available, or if it was a safety block, return default FAKE response
             return {
@@ -208,7 +284,10 @@ def predict_currency(image_input):
     except Exception as e:
         logger.error("Gemini API inference process failed: %s", str(e).encode('utf-8', 'ignore').decode('utf-8'))
         
-        # Absolute final safety net
-        logger.error("No fallback available.")
+        # Absolute final safety net: if anything goes wrong in the try block, fallback
+        logger.error("Falling back to local model due to unhandled exception.")
+        fallback_result = local_fallback_predict(pil_img)
+        if fallback_result:
+            return fallback_result
             
         raise Exception(f"Recognition failed: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
