@@ -185,7 +185,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
         fallback_model = "gemini-3.5-flash-lite"
         models_to_try = [primary_model, fallback_model]
         
@@ -212,7 +212,7 @@ def predict_currency(image_input):
                 except Exception as e:
                     last_error = e
                     error_msg = str(e).upper()
-                    if "503" in error_msg or "429" in error_msg or "UNAVAILABLE" in error_msg or "QUOTA" in error_msg:
+                    if "503" in error_msg or "UNAVAILABLE" in error_msg:
                         if attempt < max_retries_per_model - 1:
                             logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
                             time.sleep(retry_delay)
