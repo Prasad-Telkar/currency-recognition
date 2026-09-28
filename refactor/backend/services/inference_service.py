@@ -169,13 +169,16 @@ def predict_currency(image_input):
     and returns a standardized prediction dictionary via Gemini.
     """
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise Exception("CurrencyAI service is unconfigured (Missing API Key).")
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not api_key and not groq_key:
+        raise Exception("CurrencyAI service is unconfigured (Missing API Keys).")
     
-    try:
-        gemini_client = genai.Client(api_key=api_key)
-    except Exception as e:
-        raise Exception(f"Failed to initialize AI client: {e}")
+    gemini_client = None
+    if api_key:
+        try:
+            gemini_client = genai.Client(api_key=api_key)
+        except Exception as e:
+            print(f"Failed to initialize AI client: {e}")
     
     pil_img = None
     if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
@@ -254,37 +257,38 @@ def predict_currency(image_input):
         response = None
         last_error = None
         
-        for current_model in models_to_try:
-            retry_delay = 2
-            for attempt in range(max_retries_per_model):
-                try:
-                    response = gemini_client.models.generate_content(
-                        model=current_model,
-                        contents=[pil_img, prompt],
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            response_schema=CurrencyPrediction,
-                            temperature=0.1
-                        ),
-                    )
-                    break # Success, break out of attempt loop
-                except Exception as e:
-                    last_error = e
-                    error_msg = str(e).upper()
-                    if "503" in error_msg or "UNAVAILABLE" in error_msg:
-                        if attempt < max_retries_per_model - 1:
-                            logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
-                            time.sleep(retry_delay)
-                            retry_delay *= 2
+        if gemini_client:
+            for current_model in models_to_try:
+                retry_delay = 2
+                for attempt in range(max_retries_per_model):
+                    try:
+                        response = gemini_client.models.generate_content(
+                            model=current_model,
+                            contents=[pil_img, prompt],
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                response_schema=CurrencyPrediction,
+                                temperature=0.1
+                            ),
+                        )
+                        break # Success, break out of attempt loop
+                    except Exception as e:
+                        last_error = e
+                        error_msg = str(e).upper()
+                        if "503" in error_msg or "UNAVAILABLE" in error_msg:
+                            if attempt < max_retries_per_model - 1:
+                                logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2
+                            else:
+                                logger.error(f"{current_model} is overloaded. Trying next model...")
+                                break # Break attempt loop, move to next model
                         else:
-                            logger.error(f"{current_model} is overloaded. Trying next model...")
+                            logger.error(f"Gemini API Error with {current_model}: {error_msg}")
                             break # Break attempt loop, move to next model
-                    else:
-                        logger.error(f"Gemini API Error with {current_model}: {error_msg}")
-                        break # Break attempt loop, move to next model
-            
-            if response:
-                break # Success, break out of model loop
+                
+                if response:
+                    break # Success, break out of model loop
                     
         if not response:
             logger.error(f"Failed to get a response from Gemini models. Last error: {last_error}")
