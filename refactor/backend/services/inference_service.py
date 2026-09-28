@@ -186,7 +186,7 @@ def predict_currency(image_input):
         )
         
         primary_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-        fallback_model = "gemini-2.5-flash-lite"
+        fallback_model = "gemini-3.5-flash-lite"
         models_to_try = [primary_model, fallback_model]
         
         import time
