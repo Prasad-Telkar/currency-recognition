@@ -9,7 +9,6 @@ MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
 SUPPORTED_PAIRS = [("USD", "INR"), ("EUR", "USD"), ("GBP", "USD"), ("USD", "JPY"), ("AUD", "USD")]
 
 def generate_naive_fallback(base_currency, target_currency, horizon):
-    # Try direct
     hist = yf.Ticker(f"{base_currency}{target_currency}=X").history(period="90d")
     if hist.empty:
         # Try inverted
@@ -17,27 +16,7 @@ def generate_naive_fallback(base_currency, target_currency, horizon):
         if not hist.empty:
             hist['Close'] = 1 / hist['Close']
         else:
-            # Try cross rate via USD
-            usd_base = yf.Ticker(f"USD{base_currency}=X").history(period="90d")
-            usd_target = yf.Ticker(f"USD{target_currency}=X").history(period="90d")
-            
-            if usd_base.empty and base_currency != "USD":
-                inv = yf.Ticker(f"{base_currency}USD=X").history(period="90d")
-                if not inv.empty:
-                    usd_base = inv
-                    usd_base['Close'] = 1 / usd_base['Close']
-            
-            if usd_target.empty and target_currency != "USD":
-                inv = yf.Ticker(f"{target_currency}USD=X").history(period="90d")
-                if not inv.empty:
-                    usd_target = inv
-                    usd_target['Close'] = 1 / usd_target['Close']
-                    
-            if not usd_base.empty and not usd_target.empty:
-                hist = (usd_target['Close'] / usd_base['Close']).to_frame(name='Close').dropna()
-                
-    if hist.empty:
-        return {"success": False, "message": f"Cannot fetch data for {base_currency}-{target_currency}."}
+            return {"success": False, "message": f"Cannot fetch data for {base_currency}-{target_currency}. Currency may be demonetized or unsupported."}
         
     hist = hist[['Close']].resample('D').ffill()
     

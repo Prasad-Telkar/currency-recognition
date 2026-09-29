@@ -39,30 +39,7 @@ def get_historical_rates():
             if not hist.empty:
                 hist['Close'] = 1 / hist['Close']
             else:
-                # 3. Fallback to Cross Rate via USD
-                usd_base = yf.Ticker(f"USD{base}=X").history(period=period)
-                usd_target = yf.Ticker(f"USD{target}=X").history(period=period)
-                
-                # Some might be quoted the other way, like EURUSD=X instead of USDEUR=X
-                if usd_base.empty and base != "USD":
-                    inv = yf.Ticker(f"{base}USD=X").history(period=period)
-                    if not inv.empty:
-                        usd_base = inv
-                        usd_base['Close'] = 1 / usd_base['Close']
-                        
-                if usd_target.empty and target != "USD":
-                    inv = yf.Ticker(f"{target}USD=X").history(period=period)
-                    if not inv.empty:
-                        usd_target = inv
-                        usd_target['Close'] = 1 / usd_target['Close']
-
-                if not usd_base.empty and not usd_target.empty:
-                    # Cross rate calculation: (USD -> TARGET) / (USD -> BASE)
-                    # For example, if USD->INR is 84 and USD->EGP is 48
-                    # 1 INR = 48/84 = 0.57 EGP
-                    hist = (usd_target['Close'] / usd_base['Close']).to_frame(name='Close').dropna()
-                else:
-                    return generate_dummy_data()
+                return generate_dummy_data()
 
         # Take the last 'days' rows
         hist = hist.tail(days)
@@ -139,25 +116,7 @@ def get_forecast():
             if not hist.empty:
                 hist['Close'] = 1 / hist['Close']
             else:
-                usd_base = yf.Ticker(f"USD{base}=X").history(period=period)
-                usd_target = yf.Ticker(f"USD{target}=X").history(period=period)
-                
-                if usd_base.empty and base != "USD":
-                    inv = yf.Ticker(f"{base}USD=X").history(period=period)
-                    if not inv.empty:
-                        usd_base = inv
-                        usd_base['Close'] = 1 / usd_base['Close']
-                        
-                if usd_target.empty and target != "USD":
-                    inv = yf.Ticker(f"{target}USD=X").history(period=period)
-                    if not inv.empty:
-                        usd_target = inv
-                        usd_target['Close'] = 1 / usd_target['Close']
-
-                if not usd_base.empty and not usd_target.empty:
-                    hist = (usd_target['Close'] / usd_base['Close']).to_frame(name='Close').dropna()
-                else:
-                    return generate_error_or_dummy_response("No historical data available for this pair")
+                return generate_error_or_dummy_response("No historical data available for this pair")
 
         hist = hist.tail(historical_days)
         
