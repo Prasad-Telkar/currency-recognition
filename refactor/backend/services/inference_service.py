@@ -248,11 +248,9 @@ def predict_currency(image_input):
             return groq_result
             
         models_to_try = [
-            os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
-            "gemini-1.5-pro",
-            "gemini-1.5-flash-8b",
-            "gemini-2.0-flash-exp",
-            "gemini-pro-vision"
+            os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+            "gemini-3.7-flash",
+            "gemini-3.8-flash"
         ]
         # Deduplicate while preserving order
         seen = set()
