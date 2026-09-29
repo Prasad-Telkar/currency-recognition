@@ -89,17 +89,8 @@ CurrencyAI was brought to life through the combined efforts of four dedicated de
 
 **Guided by Experience:**
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="refactor/frontend/frontend-app/public/mentor.png" width="100px;" alt="Dileep Ladache" style="border-radius: 50%"/><br />
-      <b>Dileep Ladache</b><br />
-      <i>Project Mentor</i>
-    </td>
-  </tr>
-</table>
-
-*   **Dileep Ladache:** Provided invaluable guidance, architectural advice, and technical mentorship to the team throughout the entire development lifecycle of CurrencyAI.
+*   **Dileep Ladache** — *Project Mentor*
+    Provided invaluable guidance, architectural advice, and technical mentorship to the team throughout the entire development lifecycle of CurrencyAI.
 
 ---
 
