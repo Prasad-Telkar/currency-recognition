@@ -67,7 +67,7 @@ def load_fallback_model():
         return False
 
 def local_fallback_predict(pil_img):
-    if not load_fallback_model():
+    if not load_fallback_model() or pil_img is None:
         return None
         
     try:
@@ -127,23 +127,50 @@ def predict_currency(image_input):
         except Exception as e:
             print(f"Failed to initialize AI client: {e}")
     
-    pil_img = None
+    image_to_send = None
+    
     if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
         pil_img = image_input
+        pil_img.thumbnail((1024, 1024))
+        image_to_send = pil_img
     elif isinstance(image_input, (bytes, bytearray)):
         try:
             from PIL import Image
             pil_img = Image.open(BytesIO(image_input))
-        except Exception:
-            raise Exception("Invalid image format.")
+            pil_img.thumbnail((1024, 1024))
+            image_to_send = pil_img
+        except Exception as e:
+            logger.warning(f"PIL failed: {e}. Trying OpenCV fallback.")
+            try:
+                import cv2
+                import numpy as np
+                np_arr = np.frombuffer(image_input, np.uint8)
+                cv_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                if cv_img is None:
+                    raise Exception("OpenCV could not decode the image.")
+                
+                h, w = cv_img.shape[:2]
+                if max(h, w) > 1024:
+                    scale = 1024 / max(h, w)
+                    cv_img = cv2.resize(cv_img, (int(w * scale), int(h * scale)))
+                    
+                success, encoded_img = cv2.imencode('.jpg', cv_img)
+                if not success:
+                    raise Exception("Failed to encode image to JPEG.")
+                
+                image_to_send = types.Part.from_bytes(data=encoded_img.tobytes(), mime_type="image/jpeg")
+            except Exception as cv_e:
+                raise Exception(f"Invalid image format. (PIL Error: {e}, CV Error: {cv_e})")
     elif isinstance(image_input, str) and os.path.exists(image_input):
         try:
             from PIL import Image
             pil_img = Image.open(image_input)
-        except Exception:
-            raise Exception("Invalid image path.")
+            pil_img.thumbnail((1024, 1024))
+            image_to_send = pil_img
+        except Exception as e:
+            raise Exception(f"Invalid image path: {e}")
 
-    if not pil_img:
+    if not image_to_send:
         raise Exception("Could not process the uploaded image.")
 
     try:
@@ -214,7 +241,7 @@ def predict_currency(image_input):
                     try:
                         response = gemini_client.models.generate_content(
                             model=current_model,
-                            contents=[pil_img, prompt],
+                            contents=[image_to_send, prompt],
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
                                 response_schema=CurrencyPrediction,
