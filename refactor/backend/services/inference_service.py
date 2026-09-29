@@ -257,14 +257,13 @@ def predict_currency(image_input):
         models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
         
         import time
-        max_retries_per_model = 2
+        max_retries_per_model = 1
         
         response = None
         last_error = None
         
         if gemini_client:
             for current_model in models_to_try:
-                retry_delay = 2
                 for attempt in range(max_retries_per_model):
                     try:
                         response = gemini_client.models.generate_content(
@@ -281,13 +280,8 @@ def predict_currency(image_input):
                         last_error = e
                         error_msg = str(e).upper()
                         if "503" in error_msg or "UNAVAILABLE" in error_msg:
-                            if attempt < max_retries_per_model - 1:
-                                logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
-                                time.sleep(retry_delay)
-                                retry_delay *= 2
-                            else:
-                                logger.error(f"{current_model} is overloaded. Trying next model...")
-                                break # Break attempt loop, move to next model
+                            logger.error(f"{current_model} is overloaded (503). Trying next model...")
+                            break # Break attempt loop, move to next model
                         else:
                             logger.error(f"Gemini API Error with {current_model}: {error_msg}")
                             break # Break attempt loop, move to next model
@@ -300,9 +294,29 @@ def predict_currency(image_input):
             fallback_result = local_fallback_predict(pil_img)
             if fallback_result:
                 return fallback_result
-            if last_error:
-                raise last_error
-            raise Exception("Failed to get a response from Gemini, and fallback model is unavailable.")
+                
+            # If all else fails, return a graceful JSON response instead of crashing with a 500 error
+            return {
+                "is_currency": False,
+                "is_fake": False,
+                "fake_reason": "",
+                "currency_name": "API Overloaded",
+                "currency_code": "ERR",
+                "symbol": "!",
+                "denomination": "0",
+                "confidence": 0,
+                "country": "Unknown",
+                "explanation": "The AI models are currently experiencing extremely high demand. Please try again in a few minutes.",
+                "history": "",
+                "legal_tender_info": "",
+                "is_legal_tender": False,
+                "purchasing_power": {
+                    "item_name": "",
+                    "past_comparison": "",
+                    "present_comparison": "",
+                    "summary": ""
+                }
+            }
         
         try:
             raw_text = "<not available>"
