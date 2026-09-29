@@ -57,18 +57,49 @@ CurrencyAI uses a decoupled client-server architecture to ensure high performanc
 
 CurrencyAI was brought to life through the combined efforts of four dedicated developers, under expert mentorship. Different strengths, one shared vision.
 
-*   **Prasada** — *Interface & Product Design*
-    Designed and developed the beautiful CurrencyAI frontend. Focused on user experience, visual design, and seamlessly integrating complex AI capabilities into an intuitive, accessible application.
-*   **Kunal** — *Data Collection & Interface Support*
-    Spearheaded the collection, cleaning, and organization of the massive currency datasets required for the project, while also contributing to product refinement and UI support.
-*   **Vinay** — *Denomination & Data Organization*
-    Led the complex task of denomination identification, organizing the data structures by specific banknote values, and contributed directly to core development.
-*   **Anushka** — *Machine Learning*
-    Architected and developed the machine learning components of CurrencyAI, including training the models responsible for making the application truly intelligent.
+<table>
+  <tr>
+    <td align="center">
+      <img src="refactor/frontend/frontend-app/public/prasada.jpg" width="100px;" alt="Prasada" style="border-radius: 50%"/><br />
+      <b>Prasada</b><br />
+      <i>Interface & Product Design</i>
+    </td>
+    <td align="center">
+      <img src="refactor/frontend/frontend-app/public/kunal.jpg" width="100px;" alt="Kunal" style="border-radius: 50%"/><br />
+      <b>Kunal</b><br />
+      <i>Data & Interface Support</i>
+    </td>
+    <td align="center">
+      <img src="refactor/frontend/frontend-app/public/vinay.png" width="100px;" alt="Vinay" style="border-radius: 50%"/><br />
+      <b>Vinay</b><br />
+      <i>Denomination & Data</i>
+    </td>
+    <td align="center">
+      <img src="refactor/frontend/frontend-app/public/anushka.jpg" width="100px;" alt="Anushka" style="border-radius: 50%"/><br />
+      <b>Anushka</b><br />
+      <i>Machine Learning</i>
+    </td>
+  </tr>
+</table>
+
+*   **Prasada:** Designed and developed the beautiful CurrencyAI frontend. Focused on user experience, visual design, and seamlessly integrating complex AI capabilities into an intuitive, accessible application.
+*   **Kunal:** Spearheaded the collection, cleaning, and organization of the massive currency datasets required for the project, while also contributing to product refinement and UI support.
+*   **Vinay:** Led the complex task of denomination identification, organizing the data structures by specific banknote values, and contributed directly to core development.
+*   **Anushka:** Architected and developed the machine learning components of CurrencyAI, including training the models responsible for making the application truly intelligent.
 
 **Guided by Experience:**
-*   **Dileep Ladache** — *Project Mentor*
-    Provided invaluable guidance, architectural advice, and technical mentorship to the team throughout the entire development lifecycle of CurrencyAI.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="refactor/frontend/frontend-app/public/mentor.png" width="100px;" alt="Dileep Ladache" style="border-radius: 50%"/><br />
+      <b>Dileep Ladache</b><br />
+      <i>Project Mentor</i>
+    </td>
+  </tr>
+</table>
+
+*   **Dileep Ladache:** Provided invaluable guidance, architectural advice, and technical mentorship to the team throughout the entire development lifecycle of CurrencyAI.
 
 ---
 
