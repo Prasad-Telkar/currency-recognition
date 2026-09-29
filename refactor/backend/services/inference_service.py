@@ -109,74 +109,6 @@ def local_fallback_predict(pil_img):
         logger.error(f"Fallback inference failed: {e}")
         return None
 
-def groq_predict(pil_img, prompt):
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        return None
-        
-    try:
-        import urllib.request
-        import json
-        import base64
-        from io import BytesIO
-        
-        if pil_img.mode in ("RGBA", "P", "LA", "PA"):
-            pil_img = pil_img.convert("RGB")
-            
-        buffered = BytesIO()
-        pil_img.save(buffered, format="JPEG")
-        img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "User-Agent": "CurrencyAI/1.0"
-        }
-        data = {
-            "model": "qwen/qwen3.8-27b",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt + "\n\nYou MUST return ONLY a valid JSON object matching the requested schema. No markdown, no backticks, no text before or after."},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
-                    ]
-                }
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0.1
-        }
-        
-        req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
-        with urllib.request.urlopen(req, timeout=10) as res:
-            response_body = res.read().decode('utf-8')
-            response_json = json.loads(response_body)
-            content = response_json["choices"][0]["message"]["content"]
-            
-            # Clean up potential markdown formatting that causes json.loads to fail
-            content = content.strip()
-            if content.startswith("```json"):
-                content = content[7:]
-            elif content.startswith("```"):
-                content = content[3:]
-            if content.endswith("```"):
-                content = content[:-3]
-            content = content.strip()
-            
-            result_dict = json.loads(content)
-            
-            if "pp_item_name" in result_dict:
-                result_dict["purchasing_power"] = {
-                    "item_name": result_dict.pop("pp_item_name", ""),
-                    "past_comparison": result_dict.pop("pp_past_comparison", ""),
-                    "present_comparison": result_dict.pop("pp_present_comparison", ""),
-                    "summary": result_dict.pop("pp_summary", "")
-                }
-            return result_dict
-    except Exception as e:
-        print("Groq API failed:", e)
-        return None
 
 def predict_currency(image_input):
     """
@@ -257,11 +189,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        # Try Groq API First (if configured) because it's ultra-fast and avoids Gemini Quota hanging
-        groq_result = groq_predict(pil_img, prompt)
-        if groq_result:
-            return groq_result
-            
+
         models_to_try = [
             os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
             "gemini-1.5-pro",
