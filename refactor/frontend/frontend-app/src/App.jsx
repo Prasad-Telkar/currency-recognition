@@ -38,18 +38,37 @@ import VoiceAssistanceInfo from "./components/VoiceAssistanceInfo";
 import CameraRecognitionInfo from "./components/CameraRecognitionInfo";
 import CurrencyInfoPage from "./components/CurrencyInfoPage";
 import AccountSettings from "./components/AccountSettings";
+import FuturePrediction from "./components/FuturePrediction";
 
 export default function App() {
   const { i18n } = useTranslation();
   const { user, login, logout } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("home");
+  const getInitialTab = () => {
+    const path = window.location.pathname.replace(/^\/+/g, '');
+    return path || "home";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [darkMode, setDarkMode] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [infoPageData, setInfoPageData] = useState(null);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\/+/g, '');
+      setActiveTab(path || "home");
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    const newPath = tab === 'home' ? '/' : `/${tab}`;
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({}, '', newPath);
+    }
     setTimeout(() => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
@@ -141,6 +160,7 @@ export default function App() {
               </>
             )}
 
+            {activeTab === "future-prediction" && <FuturePrediction />}
             {activeTab === "ai" && <AICapabilities />}
             {activeTab === "about" && <AboutCurrencyAI />}
             {activeTab === "converter" && <ManualConverter conversion={conversion} />}

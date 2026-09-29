@@ -10,6 +10,7 @@ import {
   Info,
   Coins, 
   Languages,
+  TrendingUp,
   ChevronRight,
   ChevronLeft,
   X
@@ -30,7 +31,8 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
       title: "Main",
       items: [
         { id: "home", icon: Home, label: t("nav.home", "Currency Recognition") },
-        { id: "ai", icon: Sparkles, label: t("nav.ai", "What AI Can Do") }
+        { id: "ai", icon: Sparkles, label: t("nav.ai", "What AI Can Do") },
+        { id: "future-prediction", icon: TrendingUp, label: t("nav.future_prediction", "Future Prediction") }
       ]
     },
     {

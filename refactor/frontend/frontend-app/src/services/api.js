@@ -307,3 +307,22 @@ export async function fetchFinancialNews(currencyCode, countryName) {
   }
   return [];
 }
+
+export async function fetchForecast(from, to, days) {
+  try {
+    const params = new URLSearchParams({
+      from: from || "USD",
+      to: to || "INR",
+      days: days || 30
+    });
+    
+    const res = await fetch(`${API_BASE}/rates/predict?${params.toString()}`);
+    if (res.ok) {
+      return await res.json();
+    }
+    throw new Error("Failed to fetch prediction");
+  } catch (error) {
+    console.error("fetchForecast failed:", error);
+    throw error;
+  }
+}

@@ -56,37 +56,6 @@ export default function AboutCurrencyAI() {
           <h2>The Team Behind CurrencyAI</h2>
         </div>
         
-        <div style={{ marginBottom: '80px', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--gold-bright)', marginBottom: '16px', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em' }}>
-            <Sparkles size={14} /> Guided by Experience
-          </div>
-          
-          <div className="info-card" style={{ maxWidth: '380px', margin: '0 auto', padding: '40px 24px', textAlign: 'center', position: 'relative' }}>
-            <div 
-              style={{ 
-                width: "180px", 
-                height: "180px", 
-                borderRadius: "50%", 
-                background: "var(--surface-2)", 
-                margin: "0 auto 20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "2px solid var(--gold-bright)", // Highlighted border for mentor
-                color: "var(--muted)",
-                overflow: "hidden"
-              }}
-            >
-              <img src="/mentor.png" alt="Dileep Ladache" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-            <h3 style={{ fontSize: '22px', marginBottom: '8px' }}>Dileep Ladache</h3>
-            <p style={{ color: "var(--gold-bright)", fontSize: "14px", marginBottom: "20px" }}>Project Mentor</p>
-            <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.6 }}>
-              Guiding the team throughout the CurrencyAI journey.
-            </p>
-          </div>
-        </div>
-        
         <p style={{ marginBottom: "32px", fontSize: "16px", color: "var(--muted)", lineHeight: 1.6 }}>
           CurrencyAI was built through the combined efforts of all four team members. From collecting and organizing datasets to machine learning, denomination processing, interface design, and development, each member contributed an essential part to bringing the project together.
         </p>
@@ -128,10 +97,11 @@ export default function AboutCurrencyAI() {
                 alignItems: "center",
                 justifyContent: "center",
                 border: "2px solid var(--border)",
-                color: "var(--muted)"
+                color: "var(--muted)",
+                overflow: "hidden"
               }}
             >
-              PHOTO
+              <img src="/kunal.jpg" alt="Kunal" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h3>Kunal</h3>
             <p style={{ color: "var(--gold-bright)", fontSize: "13px", marginBottom: "12px", minHeight: "36px" }}>Data Collection &amp; Interface Support</p>
@@ -188,6 +158,20 @@ export default function AboutCurrencyAI() {
 
         <div style={{ textAlign: 'center', marginTop: '40px', padding: '20px', background: 'var(--surface-2)', borderRadius: '12px' }}>
           <strong>Four contributors. Different strengths. One shared vision — CurrencyAI.</strong>
+        </div>
+
+        <div style={{ marginTop: '60px', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--gold-bright)', marginBottom: '16px', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.1em' }}>
+            <Sparkles size={14} /> Guided by Experience
+          </div>
+          
+          <div className="info-card" style={{ maxWidth: '380px', margin: '0 auto', padding: '30px 24px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '22px', marginBottom: '8px' }}>Dileep Ladache</h3>
+            <p style={{ color: "var(--gold-bright)", fontSize: "14px", marginBottom: "20px" }}>Project Mentor</p>
+            <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.6 }}>
+              Guiding the team throughout the CurrencyAI journey.
+            </p>
+          </div>
         </div>
 
       </section>
