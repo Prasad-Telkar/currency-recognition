@@ -192,14 +192,9 @@ def predict_currency(image_input):
 
         models_to_try = [
             os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
-            "gemini-1.5-pro",
-            "gemini-1.5-flash-8b",
-            "gemini-2.0-flash-exp",
-            "gemini-pro-vision",
-            "gemini-3.6-flash",
-            "gemini-3.7-flash",
-            "gemini-3.8-flash"
+            "gemini-1.5-pro"
         ]
+        
         # Deduplicate while preserving order
         seen = set()
         models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
