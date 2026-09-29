@@ -44,10 +44,11 @@ def generate_naive_fallback(base_currency, target_currency, horizon):
         predicted_rate += dampened_drift
         forecast_data.append({
             "date": next_date.strftime("%Y-%m-%d"),
-            "rate": round(predicted_rate, 4)
+            "rate": float(round(predicted_rate, 4))
         })
         
     change_percent = ((predicted_rate - current_rate) / current_rate * 100) if current_rate != 0 else 0.0
+    change_percent = float(change_percent)
     trend = "increase" if change_percent > 0 else "decrease"
     
     return {
@@ -55,9 +56,9 @@ def generate_naive_fallback(base_currency, target_currency, horizon):
         "base": base_currency,
         "quote": target_currency,
         "horizon": horizon,
-        "currentRate": round(current_rate, 4),
-        "predictedRate": round(predicted_rate, 4),
-        "changePercent": round(change_percent, 2),
+        "currentRate": float(round(current_rate, 4)),
+        "predictedRate": float(round(predicted_rate, 4)),
+        "changePercent": float(round(change_percent, 2)),
         "historical": historical_data,
         "forecast": forecast_data,
         "model": "Mathematical Trend Analysis",
