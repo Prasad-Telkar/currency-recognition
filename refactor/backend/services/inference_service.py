@@ -120,6 +120,9 @@ def groq_predict(pil_img, prompt):
         import base64
         from io import BytesIO
         
+        if pil_img.mode in ("RGBA", "P", "LA", "PA"):
+            pil_img = pil_img.convert("RGB")
+            
         buffered = BytesIO()
         pil_img.save(buffered, format="JPEG")
         img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -150,6 +153,17 @@ def groq_predict(pil_img, prompt):
             response_body = res.read().decode('utf-8')
             response_json = json.loads(response_body)
             content = response_json["choices"][0]["message"]["content"]
+            
+            # Clean up potential markdown formatting that causes json.loads to fail
+            content = content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            elif content.startswith("```"):
+                content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+            content = content.strip()
+            
             result_dict = json.loads(content)
             
             if "pp_item_name" in result_dict:
