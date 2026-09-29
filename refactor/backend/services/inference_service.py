@@ -234,6 +234,7 @@ def predict_currency(image_input):
         
         response = None
         last_error = None
+        all_errors = {}
         
         if gemini_client:
             for current_model in models_to_try:
@@ -252,6 +253,7 @@ def predict_currency(image_input):
                     except Exception as e:
                         last_error = e
                         error_msg = str(e).upper()
+                        all_errors[current_model] = str(e)
                         if "503" in error_msg or "UNAVAILABLE" in error_msg:
                             logger.error(f"{current_model} is overloaded (503). Trying next model...")
                             break # Break attempt loop, move to next model
@@ -264,10 +266,12 @@ def predict_currency(image_input):
                     
         if not response:
             logger.error(f"Failed to get a response from Gemini models. Last error: {last_error}")
-            fallback_result = local_fallback_predict(pil_img)
+            fallback_result = local_fallback_predict(pil_img) if 'pil_img' in locals() and pil_img else None
             if fallback_result:
                 return fallback_result
                 
+            error_details = " | ".join([f"{k}: {v}" for k, v in all_errors.items()])
+            
             # If all else fails, return a graceful JSON response instead of crashing with a 500 error
             return {
                 "is_currency": False,
@@ -279,7 +283,7 @@ def predict_currency(image_input):
                 "denomination": "0",
                 "confidence": 0,
                 "country": "Unknown",
-                "explanation": f"The AI models are currently experiencing extremely high demand. Please try again in a few minutes. (Debug Error: {str(last_error)})",
+                "explanation": f"The AI models are currently experiencing extremely high demand. Please try again in a few minutes. (Debug Errors: {error_details})",
                 "history": "",
                 "legal_tender_info": "",
                 "is_legal_tender": False,
