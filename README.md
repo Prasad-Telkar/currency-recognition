@@ -72,12 +72,12 @@ CurrencyAI was brought to life through the combined efforts of four dedicated de
     <td align="center">
       <img src="refactor/frontend/frontend-app/public/vinay.png" width="100px;" alt="Vinay" style="border-radius: 50%"/><br />
       <b>Vinay</b><br />
-      <i>Denomination & Data</i>
+      <i>Denomination & Data / Interface Support</i>
     </td>
     <td align="center">
       <img src="refactor/frontend/frontend-app/public/anushka.jpg" width="100px;" alt="Anushka" style="border-radius: 50%"/><br />
       <b>Anushka</b><br />
-      <i>Machine Learning</i>
+      <i>Machine Learning / Fake Currency Detection</i>
     </td>
   </tr>
 </table>
