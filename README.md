@@ -82,10 +82,10 @@ CurrencyAI was brought to life through the combined efforts of four dedicated de
   </tr>
 </table>
 
-*   **Prasada:** Designed and developed the beautiful CurrencyAI frontend. Focused on user experience, visual design, and seamlessly integrating complex AI capabilities into an intuitive, accessible application.
-*   **Kunal:** Spearheaded the collection, cleaning, and organization of the massive currency datasets required for the project, while also contributing to product refinement and UI support.
-*   **Vinay:** Led the complex task of denomination identification, organizing the data structures by specific banknote values, and contributed directly to core development.
-*   **Anushka:** Architected and developed the machine learning components of CurrencyAI, including training the models responsible for making the application truly intelligent.
+*   **Prasada:** Led the core frontend development and user experience, while working closely with the entire team to collaboratively design the overall architecture, feature roadmap, and UI.
+*   **Kunal:** Spearheaded the collection and cleaning of massive currency datasets, while playing a major collaborative role in UI/UX designing and frontend interface support.
+*   **Vinay:** Engineered the external API integrations for the Future Prediction engine and led the complex task of denomination identification and core data organization.
+*   **Anushka:** Architected the machine learning pipeline, specifically developing the fake currency identification systems and training the predictive models that power CurrencyAI.
 
 **Guided by Experience:**
 
