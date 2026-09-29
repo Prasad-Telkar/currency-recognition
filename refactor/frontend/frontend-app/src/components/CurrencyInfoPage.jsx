@@ -95,7 +95,7 @@ export default function CurrencyInfoPage({ data, onBack }) {
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', color: '#ff9f43', fontSize: '18px' }}>
                 <History size={20} /> Detailed Historical Context
               </h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: 'var(--text-color)', whiteSpace: 'pre-line' }}>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: 'var(--text-color)', whiteSpace: 'pre-line', maxHeight: '400px', overflowY: 'auto' }}>
                 {result.history || "No historical details provided for this specific denomination."}
               </div>
               {result.isLegalTender === false && result.legalTenderInfo && (

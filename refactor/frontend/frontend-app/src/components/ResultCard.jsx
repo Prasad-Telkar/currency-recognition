@@ -26,7 +26,7 @@ export default function ResultCard({ result, voice, lang, conversion, onOpenFull
 
         <div className="glass-panel" style={{ marginTop: '20px', padding: '20px', background: 'rgba(255, 71, 87, 0.05)', border: '1px solid rgba(255, 71, 87, 0.2)', borderRadius: '12px' }}>
           <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: '600', color: '#ff4757' }}>Explanation</h3>
-          <p style={{ fontSize: '15px', lineHeight: '1.7', color: 'var(--text-color)' }}>
+          <p style={{ fontSize: '15px', lineHeight: '1.7', color: 'var(--text-color)', maxHeight: '200px', overflowY: 'auto' }}>
             {explanation || "The uploaded image does not appear to be a genuine, recognized currency."}
           </p>
         </div>
