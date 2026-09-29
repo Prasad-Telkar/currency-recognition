@@ -13,6 +13,34 @@ logger = logging.getLogger(__name__)
 predict_bp = Blueprint("predict", __name__)
 
 
+@predict_bp.route("/debug/models", methods=["GET"])
+def debug_models():
+    """
+    Debug endpoint to list all available models for the configured API key.
+    This helps diagnose 404 NOT_FOUND errors.
+    """
+    import os
+    from google import genai
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return jsonify({"error": "GEMINI_API_KEY is not set."}), 500
+        
+    try:
+        # Explicitly disable Vertex AI to ensure we hit the Developer API
+        client = genai.Client(api_key=api_key, vertexai=False)
+        models = []
+        for m in client.models.list():
+            models.append({
+                "name": m.name,
+            })
+        return jsonify({
+            "api_key_prefix": api_key[:10] + "...",
+            "available_models": models
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @predict_bp.route("/predict", methods=["POST"])
 def predict():
     start = time.time()

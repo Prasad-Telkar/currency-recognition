@@ -123,7 +123,8 @@ def predict_currency(image_input):
     gemini_client = None
     if api_key:
         try:
-            gemini_client = genai.Client(api_key=api_key)
+            # Initialize without forcing standard AI Studio URL, but disable vertexai explicitly
+            gemini_client = genai.Client(api_key=api_key, vertexai=False)
         except Exception as e:
             print(f"Failed to initialize AI client: {e}")
     
