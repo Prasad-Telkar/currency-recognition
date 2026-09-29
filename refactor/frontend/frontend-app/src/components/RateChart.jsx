@@ -22,6 +22,7 @@ export default function RateChart({ sourceCurrency, targetCurrency }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,33 +54,66 @@ export default function RateChart({ sourceCurrency, targetCurrency }) {
       
       try {
         const rangeItem = RANGES.find(r => r.label === timeRange) || RANGES[1];
-        const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - rangeItem.days);
-
-        const endDateStr = end.toISOString().split('T')[0];
-        const startDateStr = start.toISOString().split('T')[0];
-
-        const res = await fetch(`https://api.frankfurter.dev/v1/${startDateStr}..${endDateStr}?from=${sourceCurrency}&to=${targetCurrency}`);
+        let formattedData = null;
         
-        if (!res.ok) {
-          throw new Error('Failed to fetch market data');
+        // 1. Try Twelve Data (Primary)
+        const twelveDataKey = import.meta.env.VITE_TWELVEDATA_API_KEY;
+        if (twelveDataKey) {
+          try {
+            const tdRes = await fetch(`https://api.twelvedata.com/time_series?symbol=${sourceCurrency}/${targetCurrency}&interval=1day&outputsize=${rangeItem.days}&apikey=${twelveDataKey}`);
+            const tdJson = await tdRes.json();
+            
+            if (tdJson.status === "ok" && tdJson.values && tdJson.values.length > 0) {
+              // Twelve data returns newest first, so we reverse it for the chart
+              const sortedValues = [...tdJson.values].reverse();
+              formattedData = sortedValues.map(item => {
+                const d = new Date(item.datetime);
+                return {
+                  date: item.datetime,
+                  rate: parseFloat(item.close),
+                  displayDate: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                };
+              });
+            } else {
+              console.warn("Twelve Data API issue:", tdJson.message || "Unknown error, falling back...");
+            }
+          } catch (e) {
+            console.warn("Twelve Data fetch failed, falling back to Frankfurter...", e);
+          }
+        } else {
+          console.warn("VITE_TWELVEDATA_API_KEY not found in .env, skipping Twelve Data and using Frankfurter...");
         }
 
-        const json = await res.json();
-        
-        if (!json.rates || Object.keys(json.rates).length === 0) {
-          throw new Error('No historical data available');
-        }
+        // 2. Fallback to Frankfurter
+        if (!formattedData) {
+          const end = new Date();
+          const start = new Date();
+          start.setDate(end.getDate() - rangeItem.days);
 
-        const formattedData = Object.keys(json.rates).map(dateStr => {
-          const d = new Date(dateStr);
-          return {
-            date: dateStr,
-            rate: json.rates[dateStr][targetCurrency],
-            displayDate: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-          };
-        });
+          const endDateStr = end.toISOString().split('T')[0];
+          const startDateStr = start.toISOString().split('T')[0];
+
+          const res = await fetch(`https://api.frankfurter.dev/v1/${startDateStr}..${endDateStr}?from=${sourceCurrency}&to=${targetCurrency}`);
+          
+          if (!res.ok) {
+            throw new Error('Failed to fetch market data from fallback API');
+          }
+
+          const json = await res.json();
+          
+          if (!json.rates || Object.keys(json.rates).length === 0) {
+            throw new Error('No historical data available');
+          }
+
+          formattedData = Object.keys(json.rates).map(dateStr => {
+            const d = new Date(dateStr);
+            return {
+              date: dateStr,
+              rate: json.rates[dateStr][targetCurrency],
+              displayDate: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            };
+          });
+        }
 
         if (isMounted) {
           setData(formattedData);
@@ -102,7 +136,7 @@ export default function RateChart({ sourceCurrency, targetCurrency }) {
     return () => {
       isMounted = false;
     };
-  }, [sourceCurrency, targetCurrency, timeRange]);
+  }, [sourceCurrency, targetCurrency, timeRange, retryCount]);
 
   const { currentRate, percentChange, isPositive } = useMemo(() => {
     if (!data || data.length < 2) return { currentRate: null, percentChange: 0, isPositive: true };
@@ -152,7 +186,15 @@ export default function RateChart({ sourceCurrency, targetCurrency }) {
         
         <div className="rate-chart-stats">
           {error ? (
-            <div className="rate-chart-error">{error}</div>
+            <div className="rate-chart-error-container">
+              <span className="rate-chart-error">{error}</span>
+              <button 
+                className="rate-chart-retry-btn" 
+                onClick={() => setRetryCount(prev => prev + 1)}
+              >
+                Reload
+              </button>
+            </div>
           ) : loading && !currentRate ? (
             <div className="rate-chart-loading-text">Loading...</div>
           ) : currentRate ? (

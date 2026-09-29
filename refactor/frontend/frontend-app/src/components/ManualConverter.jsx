@@ -10,6 +10,7 @@ import {
   Table,
 } from "lucide-react";
 import { CONVERTIBLE_CURRENCIES } from "../data/currencies";
+import RateChart from "./RateChart";
 
 const PRESET_AMOUNTS = [10, 50, 100, 500, 1000, 5000];
 
@@ -301,6 +302,11 @@ export default function ManualConverter({ conversion, initialFrom, initialAmount
             </div>
           )}
         </div>
+      </div>
+
+      {/* Rate Chart Section */}
+      <div style={{ marginTop: '24px' }}>
+        <RateChart sourceCurrency={baseCurrency} targetCurrency={targetCurrency} />
       </div>
 
       {/* Quick Conversion Reference Table */}

@@ -55,13 +55,36 @@
   align-items: flex-end;
 }
 
-.rate-chart-error {
-  color: #ef4444;
-  font-size: 13px;
+.rate-chart-error-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: rgba(239, 68, 68, 0.1);
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.rate-chart-error {
+  color: #ef4444;
+  font-size: 13px;
+}
+
+.rate-chart-retry-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rate-chart-retry-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
 }
 
 .rate-chart-loading-text {
