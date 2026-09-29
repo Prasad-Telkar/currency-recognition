@@ -52,15 +52,65 @@ def chat():
     Current Context: {context}
     """
     
+    # 1. Try OpenAI if configured
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            from openai import OpenAI
+            openai_client = OpenAI(api_key=openai_key)
+            response = openai_client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": question}
+                ],
+                temperature=0.7
+            )
+            return jsonify({'answer': response.choices[0].message.content}), 200
+        except Exception as e:
+            print(f"OpenAI Chat Error: {e}")
+            # Fall through to Gemini
+
+    # 2. Try Gemini Cascade
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key:
+        return jsonify({'error': 'No API keys configured for AI Assistant'}), 500
+        
     try:
-        interaction = client.interactions.create(
-            model='gemini-3.5-flash',
-            input=question,
-            system_instruction=system_instruction,
-        )
-        return jsonify({'answer': interaction.output_text}), 200
+        client = genai.Client(api_key=gemini_key, vertexai=False)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"Gemini API Error: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"Failed to initialize Gemini Client: {e}")
+        return jsonify({'error': 'Gemini API client initialization failed'}), 500
+
+    models_to_try = [
+        os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+        "gemini-3.5-flash",
+        "gemini-3.1-pro-preview",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-latest"
+    ]
+    
+    seen = set()
+    models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
+    
+    all_errors = []
+    
+    for current_model in models_to_try:
+        try:
+            interaction = client.interactions.create(
+                model=current_model,
+                input=question,
+                system_instruction=system_instruction,
+            )
+            return jsonify({'answer': interaction.output_text}), 200
+        except Exception as e:
+            error_msg = str(e).upper()
+            all_errors.append(f"{current_model}: {e}")
+            if "503" in error_msg or "UNAVAILABLE" in error_msg or "404" in error_msg:
+                print(f"Chat: {current_model} failed. Trying next...")
+                continue
+            else:
+                print(f"Chat API Error with {current_model}: {error_msg}")
+                continue
+
+    return jsonify({'error': 'All AI models are currently overloaded. Please try again later.', 'debug': all_errors}), 503

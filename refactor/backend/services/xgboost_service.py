@@ -103,7 +103,7 @@ def predict_future(base_currency, target_currency, horizon):
     metrics_path = os.path.join(MODEL_DIR, f"xgb_{model_base}_{model_target}_metrics.joblib")
     
     if not os.path.exists(model_path) or not os.path.exists(features_path) or not os.path.exists(metrics_path):
-        return {"success": False, "message": "Model artifacts not found."}
+        return generate_naive_fallback(base_currency, target_currency, horizon)
         
     model = joblib.load(model_path)
     feature_cols = joblib.load(features_path)
