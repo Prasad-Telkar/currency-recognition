@@ -7,12 +7,11 @@ import json
 import logging
 from io import BytesIO
 
-from google import genai
-from google.genai import types
+import base64
+from openai import OpenAI
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
-
 
 class CurrencyPrediction(BaseModel):
     is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
@@ -103,7 +102,7 @@ def local_fallback_predict(pil_img):
             "denomination": denomination,
             "confidence": float(confidence),
             "country": "India",
-            "explanation": "Predicted using offline fallback model due to Gemini API failure."
+            "explanation": "Predicted using offline fallback model due to API failure."
         }
     except Exception as e:
         logger.error(f"Fallback inference failed: {e}")
@@ -113,258 +112,140 @@ def local_fallback_predict(pil_img):
 def predict_currency(image_input):
     """
     Accepts raw image bytes, processes the image,
-    and returns a standardized prediction dictionary via Gemini.
+    and returns a standardized prediction dictionary via OpenAI.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
-    if not api_key and not groq_key:
-        raise Exception("CurrencyAI service is unconfigured (Missing API Keys).")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise Exception("CurrencyAI service is unconfigured (Missing OPENAI_API_KEY).")
     
-    gemini_client = None
-    if api_key:
-        try:
-            # Initialize without forcing standard AI Studio URL, but disable vertexai explicitly
-            gemini_client = genai.Client(api_key=api_key, vertexai=False)
-        except Exception as e:
-            print(f"Failed to initialize AI client: {e}")
+    openai_client = OpenAI(api_key=api_key)
     
-    image_to_send = None
-    
-    if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
-        pil_img = image_input
-        pil_img.thumbnail((1024, 1024))
-        image_to_send = pil_img
-    elif isinstance(image_input, (bytes, bytearray)):
-        try:
-            from PIL import Image
-            pil_img = Image.open(BytesIO(image_input))
-            pil_img.thumbnail((1024, 1024))
-            image_to_send = pil_img
-        except Exception as e:
-            logger.warning(f"PIL failed: {e}. Trying OpenCV fallback.")
-            try:
-                import cv2
-                import numpy as np
-                np_arr = np.frombuffer(image_input, np.uint8)
-                cv_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-                if cv_img is None:
-                    raise Exception("OpenCV could not decode the image.")
-                
-                h, w = cv_img.shape[:2]
-                if max(h, w) > 1024:
-                    scale = 1024 / max(h, w)
-                    cv_img = cv2.resize(cv_img, (int(w * scale), int(h * scale)))
-                    
-                success, encoded_img = cv2.imencode('.jpg', cv_img)
-                if not success:
-                    raise Exception("Failed to encode image to JPEG.")
-                
-                image_to_send = types.Part.from_bytes(data=encoded_img.tobytes(), mime_type="image/jpeg")
-            except Exception as cv_e:
-                raise Exception(f"Invalid image format. (PIL Error: {e}, CV Error: {cv_e})")
+    # Extract raw bytes for base64 encoding
+    image_bytes = None
+    if isinstance(image_input, (bytes, bytearray)):
+        image_bytes = image_input
+    elif hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
+        # It's a PIL Image
+        img_byte_arr = BytesIO()
+        image_input.save(img_byte_arr, format='JPEG')
+        image_bytes = img_byte_arr.getvalue()
     elif isinstance(image_input, str) and os.path.exists(image_input):
-        try:
-            from PIL import Image
-            pil_img = Image.open(image_input)
-            pil_img.thumbnail((1024, 1024))
-            image_to_send = pil_img
-        except Exception as e:
-            raise Exception(f"Invalid image path: {e}")
+        with open(image_input, "rb") as f:
+            image_bytes = f.read()
 
-    if not image_to_send:
+    if not image_bytes:
         raise Exception("Could not process the uploaded image.")
 
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+
+    prompt = (
+        "You are the currency recognition and economic analysis engine for CurrencyAI.\n"
+        "Analyze the provided image carefully.\n"
+        "Determine whether the image contains a banknote, paper bill (genuine, suspect, or counterfeit being checked), or coin.\n"
+        "CRITICAL: Even if the note is heavily damaged, torn, taped together, faded, or in extremely poor condition, you MUST still identify it and treat it as a valid currency.\n\n"
+        "If it is a banknote or coin (regardless of condition):\n"
+        "- set is_currency to true\n"
+        "- identify the country/region\n"
+        "- identify the currency name\n"
+        "- identify the ISO currency code\n"
+        "- identify the EXACT denomination value printed on the note (do not add extra zeros or hallucinate large numbers)\n"
+        "- provide the currency symbol when applicable\n"
+        "- provide a confidence estimate out of 100\n"
+        "- if the note appears to be fake, counterfeit, or a novelty toy note (e.g. 'Children Bank of India'), set is_fake to true and provide the reason in fake_reason\n"
+        "- determine if the note is still valid legal tender today. If it has been demonetized, withdrawn, banned (e.g., the old Indian 500/1000 notes from 2016, or pre-Euro currencies), or replaced, set is_legal_tender to false and detail the reasons, dates, and current value (if any) in legal_tender_info\n"
+        "- WARNING: For Brazilian notes, do NOT convert 'Cruzeiros' to 'Mil Reis' and do NOT multiply the printed denomination by 1000. If the note says '500', output '500'.\n"
+        "- briefly explain the visual evidence used\n\n"
+        "ECONOMIC & HISTORICAL INSIGHTS (for recognized currency):\n"
+        "1. Purchasing Power Comparison ('20 years ago vs today'):\n"
+        "   - Set pp_item_name to a culturally well-known, locally relatable everyday item specifically for this country (e.g. samosas / cutting chai for India, brewed coffee / burgers for USA, artisan baguettes for France/Eurozone, street tacos for Mexico, ramen/onigiri for Japan).\n"
+        "   - Set pp_past_comparison to roughly how much of this item this denomination could buy ~20 years ago (around 2004-2006).\n"
+        "   - Set pp_present_comparison to roughly how much of this item it can buy today.\n"
+        "   - Set pp_summary to a short, relatable 1-2 sentence comparison summary.\n"
+        "2. History (Fully detailed, 2-3 paragraphs):\n"
+        "   - Provide a comprehensive and interesting historical background about this specific banknote / denomination.\n"
+        "   - Detail the year of introduction, monuments, portraits, or cultural symbols depicted on the obverse and reverse.\n"
+        "   - Explain the significance of these design elements and any major design changes over time.\n\n"
+        "If the image is completely unrelated to money (e.g. animals, cars, food, random objects):\n"
+        "- set is_currency to false\n"
+        "- do not invent a currency or denomination\n"
+        "- explain why recognition was unsuccessful\n"
+        "- return empty strings for history and pp_ fields\n\n"
+        "Never guess a denomination when it is not sufficiently visible.\n"
+        "You MUST populate all history and pp_ fields when a currency is identified.\n"
+    )
+
     try:
-        # Resize image to a maximum dimension of 1024 to dramatically speed up upload and prevent timeouts
-        pil_img.thumbnail((1024, 1024))
+        print("Using OpenAI API for currency prediction...")
         
-        print("Using Gemini API for currency prediction...")
-        
-        prompt = (
-            "You are the currency recognition and economic analysis engine for CurrencyAI.\n"
-            "Analyze the provided image carefully.\n"
-            "Determine whether the image contains a banknote, paper bill (genuine, suspect, or counterfeit being checked), or coin.\n"
-            "CRITICAL: Even if the note is heavily damaged, torn, taped together, faded, or in extremely poor condition, you MUST still identify it and treat it as a valid currency.\n\n"
-            "If it is a banknote or coin (regardless of condition):\n"
-            "- set is_currency to true\n"
-            "- identify the country/region\n"
-            "- identify the currency name\n"
-            "- identify the ISO currency code\n"
-            "- identify the EXACT denomination value printed on the note (do not add extra zeros or hallucinate large numbers)\n"
-            "- provide the currency symbol when applicable\n"
-            "- provide a confidence estimate out of 100\n"
-            "- if the note appears to be fake, counterfeit, or a novelty toy note (e.g. 'Children Bank of India'), set is_fake to true and provide the reason in fake_reason\n"
-            "- determine if the note is still valid legal tender today. If it has been demonetized, withdrawn, banned (e.g., the old Indian 500/1000 notes from 2016, or pre-Euro currencies), or replaced, set is_legal_tender to false and detail the reasons, dates, and current value (if any) in legal_tender_info\n"
-            "- WARNING: For Brazilian notes, do NOT convert 'Cruzeiros' to 'Mil Reis' and do NOT multiply the printed denomination by 1000. If the note says '500', output '500'.\n"
-            "- briefly explain the visual evidence used\n\n"
-            "ECONOMIC & HISTORICAL INSIGHTS (for recognized currency):\n"
-            "1. Purchasing Power Comparison ('20 years ago vs today'):\n"
-            "   - Set pp_item_name to a culturally well-known, locally relatable everyday item specifically for this country (e.g. samosas / cutting chai for India, brewed coffee / burgers for USA, artisan baguettes for France/Eurozone, street tacos for Mexico, ramen/onigiri for Japan).\n"
-            "   - Set pp_past_comparison to roughly how much of this item this denomination could buy ~20 years ago (around 2004-2006).\n"
-            "   - Set pp_present_comparison to roughly how much of this item it can buy today.\n"
-            "   - Set pp_summary to a short, relatable 1-2 sentence comparison summary.\n"
-            "2. History (Fully detailed, 2-3 paragraphs):\n"
-            "   - Provide a comprehensive and interesting historical background about this specific banknote / denomination.\n"
-            "   - Detail the year of introduction, monuments, portraits, or cultural symbols depicted on the obverse and reverse.\n"
-            "   - Explain the significance of these design elements and any major design changes over time.\n\n"
-            "If the image is completely unrelated to money (e.g. animals, cars, food, random objects):\n"
-            "- set is_currency to false\n"
-            "- do not invent a currency or denomination\n"
-            "- explain why recognition was unsuccessful\n"
-            "- return empty strings for history and pp_ fields\n\n"
-            "Never guess a denomination when it is not sufficiently visible.\n"
-            "You MUST populate all history and pp_ fields when a currency is identified.\n"
-            "Return ONLY the required structured response matching the schema."
+        response = openai_client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text", 
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            response_format=CurrencyPrediction,
+            temperature=0.1
         )
         
-
-        models_to_try = [
-            os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
-            "gemini-3.5-flash",
-            "gemini-3.1-pro-preview",
-            "gemini-3.5-flash-lite",
-            "gemini-flash-latest"
-        ]
+        parsed_response = response.choices[0].message.parsed
+        result_dict = parsed_response.model_dump()
         
-        # Deduplicate while preserving order
-        seen = set()
-        models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
+        # Format purchasing power manually
+        result_dict["purchasing_power"] = {
+            "item_name": result_dict.pop("pp_item_name", ""),
+            "past_comparison": result_dict.pop("pp_past_comparison", ""),
+            "present_comparison": result_dict.pop("pp_present_comparison", ""),
+            "summary": result_dict.pop("pp_summary", "")
+        }
         
-        import time
-        max_retries_per_model = 1
-        
-        response = None
-        last_error = None
-        all_errors = {}
-        
-        if gemini_client:
-            for current_model in models_to_try:
-                for attempt in range(max_retries_per_model):
-                    try:
-                        response = gemini_client.models.generate_content(
-                            model=current_model,
-                            contents=[image_to_send, prompt],
-                            config=types.GenerateContentConfig(
-                                response_mime_type="application/json",
-                                response_schema=CurrencyPrediction,
-                                temperature=0.1
-                            ),
-                        )
-                        break # Success, break out of attempt loop
-                    except Exception as e:
-                        last_error = e
-                        error_msg = str(e).upper()
-                        all_errors[current_model] = str(e)
-                        if "503" in error_msg or "UNAVAILABLE" in error_msg:
-                            logger.error(f"{current_model} is overloaded (503). Trying next model...")
-                            break # Break attempt loop, move to next model
-                        else:
-                            logger.error(f"Gemini API Error with {current_model}: {error_msg}")
-                            break # Break attempt loop, move to next model
-                
-                if response:
-                    break # Success, break out of model loop
-                    
-        if not response:
-            logger.error(f"Failed to get a response from Gemini models. Last error: {last_error}")
-            fallback_result = local_fallback_predict(pil_img) if 'pil_img' in locals() and pil_img else None
-            if fallback_result:
-                return fallback_result
-                
-            error_details = " | ".join([f"{k}: {v}" for k, v in all_errors.items()])
-            
-            # If all else fails, return a graceful JSON response instead of crashing with a 500 error
-            return {
-                "is_currency": False,
-                "is_fake": False,
-                "fake_reason": "",
-                "currency_name": "API Overloaded",
-                "currency_code": "ERR",
-                "symbol": "!",
-                "denomination": "0",
-                "confidence": 0,
-                "country": "Unknown",
-                "explanation": f"The AI models are currently experiencing extremely high demand. Please try again in a few minutes. (Debug Errors: {error_details})",
-                "history": "",
-                "legal_tender_info": "",
-                "is_legal_tender": False,
-                "purchasing_power": {
-                    "item_name": "",
-                    "past_comparison": "",
-                    "present_comparison": "",
-                    "summary": ""
-                }
-            }
-        
-        try:
-            raw_text = "<not available>"
-            try:
-                raw_text = response.text.encode('utf-8', 'ignore').decode('utf-8')
-                print("Gemini Inference response raw text:", raw_text)
-            except Exception as e:
-                print("Could not access response.text (possibly blocked):", e)
-        except:
-            pass
-        
-        try:
-            if hasattr(response, 'parsed') and response.parsed:
-                if isinstance(response.parsed, BaseModel):
-                    result_dict = response.parsed.model_dump(by_alias=True)
-                else:
-                    result_dict = response.parsed
-            else:
-                try:
-                    text_to_parse = response.text
-                except Exception:
-                    # If response.text raises an exception, the response was likely blocked
-                    text_to_parse = "{}"
-                    raise Exception("Response blocked or empty")
-                result_dict = json.loads(text_to_parse)
-            
-            if "pp_item_name" in result_dict:
-                result_dict["purchasing_power"] = {
-                    "item_name": result_dict.pop("pp_item_name", ""),
-                    "past_comparison": result_dict.pop("pp_past_comparison", ""),
-                    "present_comparison": result_dict.pop("pp_present_comparison", ""),
-                    "summary": result_dict.pop("pp_summary", "")
-                }
-            
-            return result_dict
-            
-        except Exception as parse_e:
-            print("Failed to parse Gemini response:", parse_e)
-            
-            if str(parse_e) == "Response blocked or empty":
-                # Do not fallback to local model if it's a safety block (likely a counterfeit note).
-                # Just return the safety block payload.
-                pass
-            else:
-                logger.error("Falling back to local model due to parsing failure.")
-                fallback_result = local_fallback_predict(pil_img)
-                if fallback_result:
-                    return fallback_result
-            
-            # If fallback fails or isn't available, or if it was a safety block, return default FAKE response
-            return {
-                "is_currency": True,
-                "is_fake": True,
-                "fake_reason": "The image could not be processed completely due to safety filters or parsing errors, which often happens with counterfeit or prohibited content.",
-                "currency_name": "Unknown / Suspicious",
-                "currency_code": "N/A",
-                "symbol": "?",
-                "denomination": "0",
-                "confidence": 0,
-                "country": "Unknown",
-                "explanation": "Safety block or processing failure."
-            }
+        return result_dict
             
     except Exception as e:
-        logger.error("Gemini API inference process failed: %s", str(e).encode('utf-8', 'ignore').decode('utf-8'))
+        logger.error(f"OpenAI API inference process failed: {e}")
         
-        # Absolute final safety net: if anything goes wrong in the try block, fallback
-        logger.error("Falling back to local model due to unhandled exception.")
-        fallback_result = local_fallback_predict(pil_img)
+        fallback_result = None
+        # Try local fallback if PIL image exists (we'd have to decode it back, but let's just attempt it)
+        try:
+            from PIL import Image
+            fallback_img = Image.open(BytesIO(image_bytes))
+            fallback_result = local_fallback_predict(fallback_img)
+        except Exception:
+            pass
+            
         if fallback_result:
             return fallback_result
             
-        raise Exception(f"Recognition failed: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
+        return {
+            "is_currency": False,
+            "is_fake": False,
+            "fake_reason": "",
+            "currency_name": "API Error",
+            "currency_code": "ERR",
+            "symbol": "!",
+            "denomination": "0",
+            "confidence": 0,
+            "country": "Unknown",
+            "explanation": f"The OpenAI model experienced an error: {e}",
+            "history": "",
+            "legal_tender_info": "",
+            "is_legal_tender": False,
+            "purchasing_power": {
+                "item_name": "",
+                "past_comparison": "",
+                "present_comparison": "",
+                "summary": ""
+            }
+        }
