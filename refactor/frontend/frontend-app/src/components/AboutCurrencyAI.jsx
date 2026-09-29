@@ -64,8 +64,8 @@ export default function AboutCurrencyAI() {
           <div className="info-card" style={{ maxWidth: '380px', margin: '0 auto', padding: '40px 24px', textAlign: 'center', position: 'relative' }}>
             <div 
               style={{ 
-                width: "120px", 
-                height: "120px", 
+                width: "180px", 
+                height: "180px", 
                 borderRadius: "50%", 
                 background: "var(--surface-2)", 
                 margin: "0 auto 20px",
@@ -73,10 +73,11 @@ export default function AboutCurrencyAI() {
                 alignItems: "center",
                 justifyContent: "center",
                 border: "2px solid var(--gold-bright)", // Highlighted border for mentor
-                color: "var(--muted)"
+                color: "var(--muted)",
+                overflow: "hidden"
               }}
             >
-              MENTOR PHOTO
+              <img src="/mentor.png" alt="Dileep Ladache" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h3 style={{ fontSize: '22px', marginBottom: '8px' }}>Dileep Ladache</h3>
             <p style={{ color: "var(--gold-bright)", fontSize: "14px", marginBottom: "20px" }}>Project Mentor</p>
@@ -95,8 +96,8 @@ export default function AboutCurrencyAI() {
           <div className="info-card" style={{ textAlign: "center", padding: "32px 16px" }}>
             <div 
               style={{ 
-                width: "100px", 
-                height: "100px", 
+                width: "140px", 
+                height: "140px", 
                 borderRadius: "50%", 
                 background: "var(--surface-2)", 
                 margin: "0 auto 20px",
@@ -104,10 +105,11 @@ export default function AboutCurrencyAI() {
                 alignItems: "center",
                 justifyContent: "center",
                 border: "2px solid var(--border)",
-                color: "var(--muted)"
+                color: "var(--muted)",
+                overflow: "hidden"
               }}
             >
-              PHOTO
+              <img src="/prasada.jpg" alt="Prasada" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h3>Prasada</h3>
             <p style={{ color: "var(--gold-bright)", fontSize: "13px", marginBottom: "12px", minHeight: "36px" }}>Interface &amp; Product Design</p>
@@ -117,8 +119,8 @@ export default function AboutCurrencyAI() {
           <div className="info-card" style={{ textAlign: "center", padding: "32px 16px" }}>
             <div 
               style={{ 
-                width: "100px", 
-                height: "100px", 
+                width: "140px", 
+                height: "140px", 
                 borderRadius: "50%", 
                 background: "var(--surface-2)", 
                 margin: "0 auto 20px",
@@ -139,8 +141,8 @@ export default function AboutCurrencyAI() {
           <div className="info-card" style={{ textAlign: "center", padding: "32px 16px" }}>
             <div 
               style={{ 
-                width: "100px", 
-                height: "100px", 
+                width: "140px", 
+                height: "140px", 
                 borderRadius: "50%", 
                 background: "var(--surface-2)", 
                 margin: "0 auto 20px",
@@ -148,10 +150,11 @@ export default function AboutCurrencyAI() {
                 alignItems: "center",
                 justifyContent: "center",
                 border: "2px solid var(--border)",
-                color: "var(--muted)"
+                color: "var(--muted)",
+                overflow: "hidden"
               }}
             >
-              PHOTO
+              <img src="/vinay.png" alt="Vinay" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h3>Vinay</h3>
             <p style={{ color: "var(--gold-bright)", fontSize: "13px", marginBottom: "12px", minHeight: "36px" }}>Denomination &amp; Data Organization</p>
@@ -161,8 +164,8 @@ export default function AboutCurrencyAI() {
           <div className="info-card" style={{ textAlign: "center", padding: "32px 16px" }}>
             <div 
               style={{ 
-                width: "100px", 
-                height: "100px", 
+                width: "140px", 
+                height: "140px", 
                 borderRadius: "50%", 
                 background: "var(--surface-2)", 
                 margin: "0 auto 20px",
@@ -170,10 +173,11 @@ export default function AboutCurrencyAI() {
                 alignItems: "center",
                 justifyContent: "center",
                 border: "2px solid var(--border)",
-                color: "var(--muted)"
+                color: "var(--muted)",
+                overflow: "hidden"
               }}
             >
-              PHOTO
+              <img src="/anushka.jpg" alt="Anushka Desai" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h3>Anushka</h3>
             <p style={{ color: "var(--gold-bright)", fontSize: "13px", marginBottom: "12px", minHeight: "36px" }}>Machine Learning</p>

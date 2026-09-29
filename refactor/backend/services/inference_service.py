@@ -185,7 +185,7 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         fallback_model = "gemini-1.5-flash"
         models_to_try = [primary_model, fallback_model]
         

@@ -1,0 +1,223 @@
+.rate-chart-container {
+  background: var(--bg-card, #0B0E14);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rate-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.rate-chart-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rate-chart-title {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8b96a5;
+  margin: 0;
+  font-weight: 600;
+}
+
+.rate-chart-pair {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rate-chart-subtitle {
+  font-size: 12px;
+  color: #8b96a5;
+}
+
+.rate-chart-stats {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.rate-chart-error {
+  color: #ef4444;
+  font-size: 13px;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.rate-chart-loading-text {
+  color: #8b96a5;
+  font-size: 13px;
+}
+
+.rate-chart-current {
+  font-size: 11px;
+  color: #8b96a5;
+}
+
+.rate-chart-current-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 2px 0;
+}
+
+.rate-chart-change {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.rate-chart-change.positive {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.rate-chart-change.negative {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.rate-chart-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.rate-chart-range-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8b96a5;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rate-chart-range-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.rate-chart-range-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+
+.rate-chart-graph-wrapper {
+  height: 200px;
+  width: 100%;
+  position: relative;
+  margin-top: 8px;
+}
+
+.rate-chart-tooltip {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.rate-chart-tooltip-date {
+  color: #8b96a5;
+  font-size: 11px;
+  margin: 0 0 4px 0;
+}
+
+.rate-chart-tooltip-value {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
+}
+
+.rate-chart-loader-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 14, 20, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.rate-chart-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@media (max-width: 600px) {
+  .rate-chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .rate-chart-stats {
+    text-align: left;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  
+  .rate-chart-current {
+    display: none;
+  }
+  
+  .rate-chart-current-value {
+    font-size: 16px;
+    margin: 0;
+  }
+  
+  .rate-chart-change {
+    align-self: center;
+  }
+  
+  .rate-chart-graph-wrapper {
+    height: 160px;
+  }
+}

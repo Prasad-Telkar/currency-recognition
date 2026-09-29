@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { TARGET_CURRENCIES } from "../data/currencies";
+import RateChart from "./RateChart";
 
 export default function ConverterCard({ result, conversion, onOpenFullConverter }) {
   const { t } = useTranslation();
@@ -111,6 +112,11 @@ export default function ConverterCard({ result, conversion, onOpenFullConverter 
           )}
         </div>
       </div>
+
+      <RateChart 
+        sourceCurrency={result.currencyCode}
+        targetCurrency={targetCurrency}
+      />
     </div>
   );
 }
