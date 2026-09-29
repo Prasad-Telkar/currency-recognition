@@ -127,10 +127,11 @@ def groq_predict(pil_img, prompt):
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "CurrencyAI/1.0"
         }
         data = {
-            "model": "llama-3.2-11b-vision-preview",
+            "model": "qwen/qwen3.8-27b",
             "messages": [
                 {
                     "role": "user",
