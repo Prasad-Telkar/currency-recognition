@@ -109,19 +109,76 @@ def local_fallback_predict(pil_img):
         logger.error(f"Fallback inference failed: {e}")
         return None
 
+def groq_predict(pil_img, prompt):
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return None
+        
+    try:
+        import urllib.request
+        import json
+        import base64
+        from io import BytesIO
+        
+        buffered = BytesIO()
+        pil_img.save(buffered, format="JPEG")
+        img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        data = {
+            "model": "llama-3.2-11b-vision-preview",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt + "\n\nYou MUST return ONLY a valid JSON object matching the requested schema. No markdown, no backticks, no text before or after."},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                    ]
+                }
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1
+        }
+        
+        req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+        with urllib.request.urlopen(req, timeout=10) as res:
+            response_body = res.read().decode('utf-8')
+            response_json = json.loads(response_body)
+            content = response_json["choices"][0]["message"]["content"]
+            result_dict = json.loads(content)
+            
+            if "pp_item_name" in result_dict:
+                result_dict["purchasing_power"] = {
+                    "item_name": result_dict.pop("pp_item_name", ""),
+                    "past_comparison": result_dict.pop("pp_past_comparison", ""),
+                    "present_comparison": result_dict.pop("pp_present_comparison", ""),
+                    "summary": result_dict.pop("pp_summary", "")
+                }
+            return result_dict
+    except Exception as e:
+        print("Groq API failed:", e)
+        return None
+
 def predict_currency(image_input):
     """
     Accepts raw image bytes, processes the image,
     and returns a standardized prediction dictionary via Gemini.
     """
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise Exception("CurrencyAI service is unconfigured (Missing API Key).")
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not api_key and not groq_key:
+        raise Exception("CurrencyAI service is unconfigured (Missing API Keys).")
     
-    try:
-        gemini_client = genai.Client(api_key=api_key)
-    except Exception as e:
-        raise Exception(f"Failed to initialize AI client: {e}")
+    gemini_client = None
+    if api_key:
+        try:
+            gemini_client = genai.Client(api_key=api_key)
+        except Exception as e:
+            print(f"Failed to initialize AI client: {e}")
     
     pil_img = None
     if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
@@ -185,8 +242,13 @@ def predict_currency(image_input):
             "Return ONLY the required structured response matching the schema."
         )
         
-        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-        fallback_model = "gemini-1.5-flash"
+        # Try Groq API First (if configured) because it's ultra-fast and avoids Gemini Quota hanging
+        groq_result = groq_predict(pil_img, prompt)
+        if groq_result:
+            return groq_result
+            
+        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+        fallback_model = "gemini-3.5-flash-lite"
         models_to_try = [primary_model, fallback_model]
         
         import time
@@ -195,37 +257,38 @@ def predict_currency(image_input):
         response = None
         last_error = None
         
-        for current_model in models_to_try:
-            retry_delay = 2
-            for attempt in range(max_retries_per_model):
-                try:
-                    response = gemini_client.models.generate_content(
-                        model=current_model,
-                        contents=[pil_img, prompt],
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            response_schema=CurrencyPrediction,
-                            temperature=0.1
-                        ),
-                    )
-                    break # Success, break out of attempt loop
-                except Exception as e:
-                    last_error = e
-                    error_msg = str(e).upper()
-                    if "503" in error_msg or "429" in error_msg or "UNAVAILABLE" in error_msg or "QUOTA" in error_msg:
-                        if attempt < max_retries_per_model - 1:
-                            logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
-                            time.sleep(retry_delay)
-                            retry_delay *= 2
+        if gemini_client:
+            for current_model in models_to_try:
+                retry_delay = 2
+                for attempt in range(max_retries_per_model):
+                    try:
+                        response = gemini_client.models.generate_content(
+                            model=current_model,
+                            contents=[pil_img, prompt],
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                response_schema=CurrencyPrediction,
+                                temperature=0.1
+                            ),
+                        )
+                        break # Success, break out of attempt loop
+                    except Exception as e:
+                        last_error = e
+                        error_msg = str(e).upper()
+                        if "503" in error_msg or "UNAVAILABLE" in error_msg:
+                            if attempt < max_retries_per_model - 1:
+                                logger.warning(f"{current_model} busy (Attempt {attempt + 1}). Retrying in {retry_delay}s...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2
+                            else:
+                                logger.error(f"{current_model} is overloaded. Trying next model...")
+                                break # Break attempt loop, move to next model
                         else:
-                            logger.error(f"{current_model} is overloaded. Trying next model...")
+                            logger.error(f"Gemini API Error with {current_model}: {error_msg}")
                             break # Break attempt loop, move to next model
-                    else:
-                        logger.error(f"Gemini API Error with {current_model}: {error_msg}")
-                        break # Break attempt loop, move to next model
-            
-            if response:
-                break # Success, break out of model loop
+                
+                if response:
+                    break # Success, break out of model loop
                     
         if not response:
             logger.error(f"Failed to get a response from Gemini models. Last error: {last_error}")
