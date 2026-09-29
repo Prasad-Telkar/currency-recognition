@@ -34,20 +34,22 @@ CurrencyAI doesn't just look at the present; it looks at the future.
 
 CurrencyAI uses a decoupled client-server architecture to ensure high performance and scalability.
 
-**Frontend:**
+**Frontend (Client):**
 *   **React.js (Vite)** for lightning-fast module replacement and building.
 *   **Tailwind CSS** for a highly customized, glassmorphism-inspired design system.
 *   **Framer Motion** for fluid page transitions and interactive elements.
-*   **React-i18next** for seamless language switching.
-*   *Deployed via Firebase Hosting / GitHub Pages.*
+*   **Firebase Authentication** for secure, scalable user login and session management.
+*   *Deployment:* **Firebase Hosting** ensures fast, global CDN delivery of the React application.
 
-**Backend:**
+**Backend (API Server):**
 *   **Python (Flask)** serving as the robust API gateway.
-*   **Google GenAI SDK (Gemini 3.6 Flash)** for heavy-lifting multimodal image inference.
 *   **XGBoost & scikit-learn** for our machine learning forecasting pipeline.
 *   **OpenCV & Pillow** for image manipulation and quality assurance.
-*   **yfinance** for live and historical market data aggregation.
-*   *Served via Gunicorn and deployed on Render.*
+*   *Deployment:* **Render.com** hosts the Gunicorn/Flask web service, providing robust backend compute power.
+
+**Third-Party APIs & Integrations:**
+*   **Google Gemini API (3.6 Flash):** Powers the core multimodal image inference, analyzing complex currency photos and extracting denominations.
+*   **yfinance API / Frankfurter:** Aggregates live and historical global market exchange rate data for real-time conversions and XGBoost training.
 
 ---
 
