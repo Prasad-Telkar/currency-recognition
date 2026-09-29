@@ -252,7 +252,7 @@ def predict_currency(image_input):
                 "denomination": "0",
                 "confidence": 0,
                 "country": "Unknown",
-                "explanation": "The AI models are currently experiencing extremely high demand. Please try again in a few minutes.",
+                "explanation": f"The AI models are currently experiencing extremely high demand. Please try again in a few minutes. (Debug Error: {str(last_error)})",
                 "history": "",
                 "legal_tender_info": "",
                 "is_legal_tender": False,
