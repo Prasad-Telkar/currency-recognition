@@ -247,9 +247,16 @@ def predict_currency(image_input):
         if groq_result:
             return groq_result
             
-        primary_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-        fallback_model = "gemini-3.5-flash-lite"
-        models_to_try = [primary_model, fallback_model]
+        models_to_try = [
+            os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            "gemini-1.5-pro",
+            "gemini-1.5-flash-8b",
+            "gemini-2.0-flash-exp",
+            "gemini-pro-vision"
+        ]
+        # Deduplicate while preserving order
+        seen = set()
+        models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
         
         import time
         max_retries_per_model = 2
