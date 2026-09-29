@@ -2,6 +2,8 @@
 
 CurrencyAI is an advanced, AI-powered financial utility application that brings together computer vision, machine learning, and real-time financial data. Built as a collaborative mentorship project, it empowers users to instantly recognize global currencies from images, track live exchange rates, and mathematically forecast future currency trends.
 
+🌍 **Live Demo:** [https://currencyai.web.app/](https://currencyai.web.app/)
+
 Whether you are a traveler dealing with unfamiliar banknotes or an international business analyzing future currency strength, CurrencyAI provides a complete, accessible, and seamless solution.
 
 ---
