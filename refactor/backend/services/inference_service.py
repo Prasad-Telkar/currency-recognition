@@ -7,11 +7,12 @@ import json
 import logging
 from io import BytesIO
 
-import base64
-from openai import OpenAI
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
 
 class CurrencyPrediction(BaseModel):
     is_currency: bool = Field(description="True if the image contains a recognizable banknote or coin, false otherwise.")
@@ -102,7 +103,7 @@ def local_fallback_predict(pil_img):
             "denomination": denomination,
             "confidence": float(confidence),
             "country": "India",
-            "explanation": "Predicted using offline fallback model due to API failure."
+            "explanation": "Predicted using offline fallback model due to Gemini API failure."
         }
     except Exception as e:
         logger.error(f"Fallback inference failed: {e}")
@@ -112,31 +113,104 @@ def local_fallback_predict(pil_img):
 def predict_currency(image_input):
     """
     Accepts raw image bytes, processes the image,
-    and returns a standardized prediction dictionary via OpenAI.
+    and returns a standardized prediction dictionary via OpenAI or Gemini.
     """
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise Exception("CurrencyAI service is unconfigured (Missing OPENAI_API_KEY).")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
     
-    openai_client = OpenAI(api_key=api_key)
+    if not gemini_key and not openai_key:
+        raise Exception("CurrencyAI service is unconfigured (Missing API Keys).")
     
-    # Extract raw bytes for base64 encoding
-    image_bytes = None
-    if isinstance(image_input, (bytes, bytearray)):
-        image_bytes = image_input
-    elif hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
-        # It's a PIL Image
-        img_byte_arr = BytesIO()
-        image_input.save(img_byte_arr, format='JPEG')
-        image_bytes = img_byte_arr.getvalue()
+    gemini_client = None
+    if gemini_key:
+        try:
+            gemini_client = genai.Client(api_key=gemini_key, vertexai=False)
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini client: {e}")
+            
+    openai_client = None
+    if openai_key:
+        try:
+            from openai import OpenAI
+            openai_client = OpenAI(api_key=openai_key)
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {e}")
+    
+    image_to_send = None
+    encoded_img_for_openai = None
+    
+    if hasattr(image_input, 'size') and hasattr(image_input, 'mode'):
+        pil_img = image_input
+        pil_img.thumbnail((1024, 1024))
+        image_to_send = pil_img
+        
+        # Prepare for OpenAI base64
+        import base64
+        buffered = BytesIO()
+        pil_img.save(buffered, format="JPEG")
+        encoded_img_for_openai = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+    elif isinstance(image_input, (bytes, bytearray)):
+        try:
+            from PIL import Image
+            pil_img = Image.open(BytesIO(image_input))
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            pil_img.thumbnail((1024, 1024))
+            image_to_send = pil_img
+            
+            # Prepare for OpenAI base64
+            import base64
+            buffered = BytesIO()
+            pil_img.save(buffered, format="JPEG")
+            encoded_img_for_openai = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            
+        except Exception as e:
+            logger.warning(f"PIL failed: {e}. Trying OpenCV fallback.")
+            try:
+                import cv2
+                import numpy as np
+                import base64
+                np_arr = np.frombuffer(image_input, np.uint8)
+                cv_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                if cv_img is None:
+                    raise Exception("OpenCV could not decode the image.")
+                
+                h, w = cv_img.shape[:2]
+                if max(h, w) > 1024:
+                    scale = 1024 / max(h, w)
+                    cv_img = cv2.resize(cv_img, (int(w * scale), int(h * scale)))
+                    
+                success, encoded_img = cv2.imencode('.jpg', cv_img)
+                if not success:
+                    raise Exception("Failed to encode image to JPEG.")
+                
+                image_to_send = types.Part.from_bytes(data=encoded_img.tobytes(), mime_type="image/jpeg")
+                encoded_img_for_openai = base64.b64encode(encoded_img.tobytes()).decode('utf-8')
+                
+                from PIL import Image
+                pil_img = Image.open(BytesIO(encoded_img.tobytes()))
+            except Exception as cv_e:
+                raise Exception(f"Invalid image format. (PIL Error: {e}, CV Error: {cv_e})")
     elif isinstance(image_input, str) and os.path.exists(image_input):
-        with open(image_input, "rb") as f:
-            image_bytes = f.read()
+        try:
+            from PIL import Image
+            pil_img = Image.open(image_input)
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            pil_img.thumbnail((1024, 1024))
+            image_to_send = pil_img
+            
+            # Prepare for OpenAI base64
+            import base64
+            buffered = BytesIO()
+            pil_img.save(buffered, format="JPEG")
+            encoded_img_for_openai = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        except Exception as e:
+            raise Exception(f"Invalid image path: {e}")
 
-    if not image_bytes:
+    if not image_to_send:
         raise Exception("Could not process the uploaded image.")
-
-    base64_image = base64.b64encode(image_bytes).decode('utf-8')
 
     prompt = (
         "You are the currency recognition and economic analysis engine for CurrencyAI.\n"
@@ -172,80 +246,148 @@ def predict_currency(image_input):
         "- return empty strings for history and pp_ fields\n\n"
         "Never guess a denomination when it is not sufficiently visible.\n"
         "You MUST populate all history and pp_ fields when a currency is identified.\n"
+        "Return ONLY the required structured response matching the schema."
     )
 
-    try:
-        print("Using OpenAI API for currency prediction...")
-        
-        response = openai_client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text", 
-                            "text": prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            response_format=CurrencyPrediction,
-            temperature=0.1
-        )
-        
-        parsed_response = response.choices[0].message.parsed
-        result_dict = parsed_response.model_dump()
-        
-        # Format purchasing power manually
-        result_dict["purchasing_power"] = {
-            "item_name": result_dict.pop("pp_item_name", ""),
-            "past_comparison": result_dict.pop("pp_past_comparison", ""),
-            "present_comparison": result_dict.pop("pp_present_comparison", ""),
-            "summary": result_dict.pop("pp_summary", "")
-        }
-        
-        return result_dict
-            
-    except Exception as e:
-        logger.error(f"OpenAI API inference process failed: {e}")
-        
-        fallback_result = None
-        # Try local fallback if PIL image exists (we'd have to decode it back, but let's just attempt it)
+    all_errors = {}
+    
+    # ---------------------------------------------------------
+    # 1. Try OpenAI (if configured)
+    # ---------------------------------------------------------
+    if openai_client and encoded_img_for_openai:
         try:
-            from PIL import Image
-            fallback_img = Image.open(BytesIO(image_bytes))
-            fallback_result = local_fallback_predict(fallback_img)
-        except Exception:
-            pass
+            logger.info("Attempting OpenAI inference (gpt-4o-mini)...")
+            openai_response = openai_client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{encoded_img_for_openai}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                response_format=CurrencyPrediction,
+                temperature=0.1
+            )
             
-        if fallback_result:
-            return fallback_result
-            
-        return {
-            "is_currency": False,
-            "is_fake": False,
-            "fake_reason": "",
-            "currency_name": "API Error",
-            "currency_code": "ERR",
-            "symbol": "!",
-            "denomination": "0",
-            "confidence": 0,
-            "country": "Unknown",
-            "explanation": f"The OpenAI model experienced an error: {e}",
-            "history": "",
-            "legal_tender_info": "",
-            "is_legal_tender": False,
-            "purchasing_power": {
-                "item_name": "",
-                "past_comparison": "",
-                "present_comparison": "",
-                "summary": ""
-            }
+            parsed_data = openai_response.choices[0].message.parsed
+            if parsed_data:
+                result_dict = parsed_data.model_dump(by_alias=True)
+                if "pp_item_name" in result_dict:
+                    result_dict["purchasing_power"] = {
+                        "item_name": result_dict.pop("pp_item_name", ""),
+                        "past_comparison": result_dict.pop("pp_past_comparison", ""),
+                        "present_comparison": result_dict.pop("pp_present_comparison", ""),
+                        "summary": result_dict.pop("pp_summary", "")
+                    }
+                return result_dict
+                
+        except Exception as e:
+            logger.error(f"OpenAI API Error: {e}")
+            all_errors["openai (gpt-4o-mini)"] = str(e)
+
+    # ---------------------------------------------------------
+    # 2. Try Gemini (if configured and OpenAI failed/missing)
+    # ---------------------------------------------------------
+    if gemini_client:
+        models_to_try = [
+            os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+            "gemini-3.5-flash",
+            "gemini-3.1-pro-preview",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest"
+        ]
+        
+        seen = set()
+        models_to_try = [x for x in models_to_try if not (x in seen or seen.add(x))]
+        
+        response = None
+        for current_model in models_to_try:
+            try:
+                logger.info(f"Attempting Gemini inference ({current_model})...")
+                response = gemini_client.models.generate_content(
+                    model=current_model,
+                    contents=[image_to_send, prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=CurrencyPrediction,
+                        temperature=0.1
+                    ),
+                )
+                break # Success
+            except Exception as e:
+                error_msg = str(e).upper()
+                all_errors[f"gemini ({current_model})"] = str(e)
+                if "503" in error_msg or "UNAVAILABLE" in error_msg:
+                    logger.error(f"{current_model} is overloaded (503). Trying next model...")
+                else:
+                    logger.error(f"Gemini API Error with {current_model}: {error_msg}")
+        
+        if response:
+            try:
+                if hasattr(response, 'parsed') and response.parsed:
+                    if isinstance(response.parsed, BaseModel):
+                        result_dict = response.parsed.model_dump(by_alias=True)
+                    else:
+                        result_dict = response.parsed
+                else:
+                    try:
+                        text_to_parse = response.text
+                    except Exception:
+                        text_to_parse = "{}"
+                        raise Exception("Response blocked or empty")
+                    result_dict = json.loads(text_to_parse)
+                
+                if "pp_item_name" in result_dict:
+                    result_dict["purchasing_power"] = {
+                        "item_name": result_dict.pop("pp_item_name", ""),
+                        "past_comparison": result_dict.pop("pp_past_comparison", ""),
+                        "present_comparison": result_dict.pop("pp_present_comparison", ""),
+                        "summary": result_dict.pop("pp_summary", "")
+                    }
+                
+                return result_dict
+                
+            except Exception as parse_e:
+                logger.error(f"Failed to parse Gemini response: {parse_e}")
+                if str(parse_e) != "Response blocked or empty":
+                    all_errors["gemini_parsing"] = str(parse_e)
+
+    # ---------------------------------------------------------
+    # 3. Final Fallback to Local Model
+    # ---------------------------------------------------------
+    logger.error("All cloud APIs failed. Falling back to local model.")
+    fallback_result = local_fallback_predict(pil_img) if 'pil_img' in locals() and pil_img else None
+    if fallback_result:
+        return fallback_result
+        
+    error_details = " | ".join([f"{k}: {v}" for k, v in all_errors.items()])
+    
+    return {
+        "is_currency": False,
+        "is_fake": False,
+        "fake_reason": "",
+        "currency_name": "API Overloaded",
+        "currency_code": "ERR",
+        "symbol": "!",
+        "denomination": "0",
+        "confidence": 0,
+        "country": "Unknown",
+        "explanation": f"The AI models are currently experiencing high demand. Please try again in a few minutes. (Debug Errors: {error_details})",
+        "history": "",
+        "legal_tender_info": "",
+        "is_legal_tender": False,
+        "purchasing_power": {
+            "item_name": "",
+            "past_comparison": "",
+            "present_comparison": "",
+            "summary": ""
         }
+    }
