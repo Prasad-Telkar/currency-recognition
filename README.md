@@ -90,7 +90,7 @@ CurrencyAI was brought to life through the combined efforts of four dedicated de
 <table>
   <tr>
     <td align="center">
-      <img src="refactor/frontend/frontend-app/public/Prasada.png" width="100px;" alt="Prasada" style="border-radius: 50%"/><br />
+      <img src="refactor/frontend/frontend-app/public/prasada.png" width="100px;" alt="Prasada" style="border-radius: 50%"/><br />
       <b>Prasada</b><br />
       <i>Interface & Product Design</i>
     </td>
